@@ -111,7 +111,7 @@ if (aiExplanationCloseBtn) {
 async function readTextWithSupabase(text, isSlow = false, button) {
     const TTS_URL = `https://rvarfascuwvponxwdeoe.supabase.co/functions/v1/tts`;
     const request = { text: text, isSlow: isSlow };
-    
+
     // Remove playing class from all buttons
     document.querySelectorAll('.icon-btn').forEach(btn => btn.classList.remove('playing'));
     if (button) button.classList.add('playing');
@@ -168,7 +168,18 @@ async function readWordByWord(sentence) {
     }
 }
 
-async function getAiExplanation(spanishSentence) {
+async function getAiExplanation() {
+    if (currentFilteredSentences.length === 0) return;
+    const currentSentence = currentFilteredSentences[currentIndex];
+    const spanishSentence = currentSentence.spanish_text;
+
+    // 首先检查本地数据中是否已有解释
+    if (currentSentence.ai_notes) {
+        showAiExplanation('AI 句子解释', `<p>${currentSentence.ai_notes.replace(/\n/g, '<br>')}</p>`);
+        return;
+    }
+
+    // 如果没有，则调用 AI 服务并保存
     const EXPLAIN_URL = `https://rvarfascuwvponxwdeoe.supabase.co/functions/v1/explain-sentence`;
     showAiExplanation('AI 正在生成解释', `<div class="loading-spinner"></div><p style="text-align: center;">AI 正在生成解释中，请稍候...</p>`);
 
@@ -188,6 +199,20 @@ async function getAiExplanation(spanishSentence) {
         }
         const result = await response.json();
         const explanation = result.explanation || '未能获取 AI 解释。';
+
+        // 成功获取解释后，将其保存到数据库
+        const { error: updateError } = await _supabase
+            .from('sentences')
+            .update({ ai_notes: explanation })
+            .eq('id', currentSentence.id);
+
+        if (updateError) {
+            console.error('Failed to save AI notes:', updateError);
+        } else {
+            // 更新本地缓存
+            currentSentence.ai_notes = explanation;
+        }
+
         showAiExplanation('AI 句子解释', `<p>${explanation.replace(/\n/g, '<br>')}</p>`);
     } catch (error) {
         console.error('Failed to fetch from Supabase Explain API:', error);
@@ -197,9 +222,9 @@ async function getAiExplanation(spanishSentence) {
 
 // Helper function to get words from a sentence, excluding common stop words
 const stopWords = new Set([
-    'a', 'al', 'ante', 'bajo', 'con', 'contra', 'de', 'del', 'desde', 'durante', 'en', 'entre', 
-    'hacia', 'hasta', 'mediante', 'para', 'por', 'según', 'sin', 'so', 'sobre', 'tras', 
-    'el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'y', 'o', 'pero', 'mas', 
+    'a', 'al', 'ante', 'bajo', 'con', 'contra', 'de', 'del', 'desde', 'durante', 'en', 'entre',
+    'hacia', 'hasta', 'mediante', 'para', 'por', 'según', 'sin', 'so', 'sobre', 'tras',
+    'el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'y', 'o', 'pero', 'mas',
     'es', 'son', 'está', 'están', 'fue', 'fueron', 'ser', 'estar', 'haber', 'hay', 'ha',
     'no', 'mi', 'tu', 'su', 'mí', 'te', 'se', 'me', 'nos', 'os', 'lo', 'los', 'la', 'las', 'le', 'les',
     'que', 'quien', 'cuyo', 'donde', 'como', 'cuando', 'cual', 'mi'
@@ -211,7 +236,7 @@ function getWordsFromSentence(sentence) {
 
 async function generateAndUpdateHighFrequencyWords() {
     console.log('开始重新生成和更新词汇表...');
-    
+
     // 1. Fetch ALL sentences and ALL existing words with their translations
     const { data: allSentencesData, error: fetchAllError } = await _supabase
         .from('sentences')
@@ -220,7 +245,7 @@ async function generateAndUpdateHighFrequencyWords() {
         console.error('获取所有句子失败，无法更新词汇表:', fetchAllError);
         return;
     }
-    
+
     const { data: existingWordsInDb, error: fetchWordsError } = await _supabase
         .from('high_frequency_words')
         .select('spanish_word, chinese_translation');
@@ -273,7 +298,7 @@ async function generateAndUpdateHighFrequencyWords() {
     });
 
     const newWordsToTranslate = wordsToUpsert.filter(w => w.chinese_translation === '');
-    const translatedPromises = newWordsToTranslate.map(word => 
+    const translatedPromises = newWordsToTranslate.map(word =>
         fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=es&tl=zh-CN&dt=t&q=${encodeURIComponent(word.spanish_word)}`)
             .then(res => res.json())
             .then(data => ({
@@ -325,7 +350,7 @@ function filterAndSortSentences() {
     } else {
         // Sequential order, which is the default from the database query
     }
-    
+
     currentFilteredSentences = filtered;
     currentIndex = 0;
     renderSentenceCard();
@@ -352,7 +377,7 @@ function renderSentenceCard() {
     indexSpanishText.innerText = currentSentence.spanish_text;
     indexChineseText.innerText = currentSentence.chinese_translation;
     notesTextarea.value = currentSentence.notes || '';
-    
+
     // Update mastered button state
     if (indexMasteredBtn) {
         if (currentSentence.mastered) {
@@ -367,7 +392,7 @@ function renderSentenceCard() {
     if (indexReadBtn) indexReadBtn.onclick = () => readTextWithSupabase(currentSentence.spanish_text, false, indexReadBtn);
     if (indexSlowReadBtn) indexSlowReadBtn.onclick = () => readTextWithSupabase(currentSentence.spanish_text, true, indexSlowReadBtn);
     if (indexWordReadBtn) indexWordReadBtn.onclick = () => readWordByWord(currentSentence.spanish_text);
-    if (indexAiExplainBtn) indexAiExplainBtn.onclick = () => getAiExplanation(currentSentence.spanish_text);
+    if (indexAiExplainBtn) indexAiExplainBtn.onclick = () => getAiExplanation();
 }
 
 async function fetchAllSentences() {
@@ -378,7 +403,7 @@ async function fetchAllSentences() {
 
     const { data, error } = await _supabase
         .from('sentences')
-        .select('*')
+        .select('id, spanish_text, chinese_translation, notes, mastered, ai_notes')
         .order('id', { ascending: true });
 
     if (error) {
@@ -419,7 +444,7 @@ async function saveNotes() {
     const currentSentence = currentFilteredSentences[currentIndex];
     const newNotes = notesTextarea.value.trim();
     if (newNotes === currentSentence.notes) return;
-    
+
     const { error } = await _supabase
         .from('sentences')
         .update({ notes: newNotes })
@@ -440,7 +465,7 @@ async function fetchHighFrequencyWords() {
     const { data, error } = await _supabase
         .from('high_frequency_words')
         .select('*');
-    
+
     if (error) {
         console.error('Failed to fetch high frequency words:', error);
         emptyVocabularyMessage.innerText = `加载失败，请检查网络。错误信息：${error.message}`;
@@ -460,13 +485,13 @@ function filterAndSortWords() {
     } else if (filterValue === 'mastered') {
         filtered = allWords.filter(w => w.mastered);
     }
-    
+
     if (sortValue === 'random') {
         filtered = filtered.sort(() => Math.random() - 0.5);
     } else {
         filtered.sort((a, b) => b.frequency - a.frequency);
     }
-    
+
     currentFilteredWords = filtered;
     currentWordIndex = 0;
     renderWordCard();
@@ -474,7 +499,7 @@ function filterAndSortWords() {
 
 function renderWordCard() {
     if (!wordCardContainer || !spanishWord || !chineseTranslation || !wordSourceSentence) return;
-    
+
     if (currentFilteredWords.length === 0) {
         wordCardContainer.style.display = 'none';
         emptyVocabularyMessage.style.display = 'block';
@@ -489,19 +514,19 @@ function renderWordCard() {
     }
     wordCardContainer.style.display = 'flex';
     emptyVocabularyMessage.style.display = 'none';
-    
+
     const currentWord = currentFilteredWords[currentWordIndex];
     spanishWord.innerText = currentWord.spanish_word;
     chineseTranslation.innerText = currentWord.chinese_translation;
     wordSourceSentence.innerText = currentWord.source_sentence;
-    
+
     if (wordReadBtn) {
         wordReadBtn.onclick = () => readTextWithSupabase(currentWord.spanish_word, false, wordReadBtn);
     }
     if (wordSlowReadBtn) {
         wordSlowReadBtn.onclick = () => readTextWithSupabase(currentWord.spanish_word, true, wordSlowReadBtn);
     }
-    
+
     const wordMasteredBtn = document.getElementById('word-mastered-btn');
     if (wordMasteredBtn) {
         if (currentWord.mastered) {
@@ -542,7 +567,7 @@ async function toggleWordMastered(word, newStatus) {
 async function fetchSentences() {
     if (!sentenceList) return;
     sentenceList.innerHTML = `<p class="empty-list-message">加载中...</p>`;
-    
+
     const { data, error } = await _supabase
         .from('sentences')
         .select('*')
@@ -560,7 +585,7 @@ async function fetchSentences() {
 function renderManageSentences(sentencesToRender) {
     if (!sentenceList) return;
     sentenceList.innerHTML = '';
-    
+
     if (sentencesToRender.length === 0) {
         sentenceList.innerHTML = `<p class="empty-list-message">没有句子，快去添加一些吧！</p>`;
         if (selectAllCheckbox) selectAllCheckbox.checked = false;
@@ -601,12 +626,12 @@ function renderManageSentences(sentencesToRender) {
         const saveBtn = li.querySelector('.save-btn');
         const cancelBtn = li.querySelector('.cancel-btn');
         const deleteBtn = li.querySelector('.delete-btn');
-        
+
         editBtn.addEventListener('click', () => enableEditMode(li, sentence));
         saveBtn.addEventListener('click', () => saveSentence(li, sentence.id));
         cancelBtn.addEventListener('click', () => disableEditMode(li, sentence));
         deleteBtn.addEventListener('click', () => deleteSentence(sentence.id));
-        
+
         sentenceList.appendChild(li);
     });
 }
@@ -615,7 +640,7 @@ function liveSearch() {
     const searchTerm = sentenceSearch.value.toLowerCase();
     const filteredSentences = allSentences.filter(sentence => {
         return sentence.spanish_text.toLowerCase().includes(searchTerm) ||
-               sentence.chinese_translation.toLowerCase().includes(searchTerm);
+            sentence.chinese_translation.toLowerCase().includes(searchTerm);
     });
     renderManageSentences(filteredSentences);
 }
@@ -625,7 +650,7 @@ function enableEditMode(li, sentence) {
     li.classList.add('edit-mode');
     const spanishSpan = li.querySelector('.spanish');
     const chineseSpan = li.querySelector('.chinese');
-    
+
     spanishSpan.innerHTML = `<input type="text" class="edit-spanish" value="${spanishSpan.innerText}">`;
     chineseSpan.innerHTML = `<input type="text" class="edit-chinese" value="${chineseSpan.innerText}">`;
 }
@@ -634,7 +659,7 @@ function disableEditMode(li, sentence) {
     li.classList.remove('edit-mode');
     const spanishSpan = li.querySelector('.spanish');
     const chineseSpan = li.querySelector('.chinese');
-    
+
     spanishSpan.innerText = sentence.spanish_text;
     chineseSpan.innerText = sentence.chinese_translation;
 }
@@ -642,25 +667,32 @@ function disableEditMode(li, sentence) {
 async function saveSentence(li, id) {
     const spanishInput = li.querySelector('.edit-spanish');
     const chineseInput = li.querySelector('.edit-chinese');
-    
+
     if (!spanishInput || !chineseInput) return;
-    
+
     const newSpanishText = spanishInput.value.trim();
     const newChineseText = chineseInput.value.trim();
-    
+
     if (!newSpanishText || !newChineseText) {
         showCustomConfirm('西班牙语和中文都不能为空！').then(() => {});
         return;
     }
-    
+
+    const originalSentence = allSentences.find(s => s.id === id);
+    let updateData = {
+        spanish_text: newSpanishText,
+        chinese_translation: newChineseText
+    };
+
+    if (originalSentence && originalSentence.spanish_text !== newSpanishText) {
+        updateData.ai_notes = null;
+    }
+
     const { error } = await _supabase
         .from('sentences')
-        .update({ 
-            spanish_text: newSpanishText, 
-            chinese_translation: newChineseText 
-        })
+        .update(updateData)
         .eq('id', id);
-        
+
     if (error) {
         console.error('Failed to update sentence:', error);
         showCustomConfirm('更新失败，请检查控制台。').then(() => {});
@@ -678,12 +710,11 @@ async function addSentences() {
         showCustomConfirm('输入内容不能为空！', true).then(() => {});
         return;
     }
-    
+
     const EXPLAIN_URL = `https://rvarfascuwvponxwdeoe.supabase.co/functions/v1/explain-sentence`;
     const lines = inputText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
     const sentencesToProcess = lines.map(line => ({ spanish_text: line }));
-    
-    // Show loading indicator
+
     showCustomConfirm('正在添加和翻译句子，请稍候...', false);
 
     const { data: existingSentences, error: fetchError } = await _supabase.from('sentences').select('spanish_text');
@@ -695,7 +726,7 @@ async function addSentences() {
     const existingTextSet = new Set(existingSentences.map(s => s.spanish_text));
     const sentencesToAdd = sentencesToProcess.filter(s => !existingTextSet.has(s.spanish_text));
     const duplicateCount = sentencesToProcess.length - sentencesToAdd.length;
-    
+
     if (sentencesToAdd.length > 0) {
         const payload = { sentences: sentencesToAdd, getTranslation: true };
         const response = await fetch(EXPLAIN_URL, {
@@ -765,12 +796,12 @@ async function deleteSelectedSentences() {
     const confirmation = await showCustomConfirm(`确定要删除选中的 ${checkedBoxes.length} 个句子吗？此操作无法撤销。`);
     if (confirmation) {
         const idsToDelete = Array.from(checkedBoxes).map(cb => Number(cb.closest('.sentence-item').dataset.id));
-        
+
         const { error } = await _supabase
             .from('sentences')
             .delete()
             .in('id', idsToDelete);
-        
+
         if (error) {
             console.error('Failed to bulk delete sentences:', error);
             showCustomConfirm('批量删除失败，请检查控制台。', true);
@@ -799,7 +830,7 @@ window.addEventListener('load', () => {
                 readTextWithSupabase(currentSentence.spanish_text, false, indexReadBtn);
             });
         }
-        
+
         if (prevSentenceBtn) {
             prevSentenceBtn.addEventListener('click', () => {
                 currentIndex = (currentIndex > 0) ? currentIndex - 1 : currentFilteredSentences.length - 1;
@@ -825,7 +856,7 @@ window.addEventListener('load', () => {
         fetchHighFrequencyWords();
         if (wordStatusFilter) wordStatusFilter.addEventListener('change', filterAndSortWords);
         if (wordSortOrder) wordSortOrder.addEventListener('change', filterAndSortWords);
-        
+
         if (wordCardContainer) {
             wordCardContainer.addEventListener('click', (event) => {
                 if (event.target.closest('button')) {
@@ -837,7 +868,7 @@ window.addEventListener('load', () => {
                 readTextWithSupabase(currentWord.spanish_word, false, wordReadBtn);
             });
         }
-        
+
         if (prevWordBtn) {
             prevWordBtn.addEventListener('click', () => {
                 currentWordIndex = (currentWordIndex > 0) ? currentWordIndex - 1 : currentFilteredWords.length - 1;
