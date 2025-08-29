@@ -22,46 +22,21 @@
     <main id="main-content">
         <div class="container main-content-container">
             <section class="main-section">
-                <h1 class="page-title">句子学习</h1>
-                <div class="controls">
-                    <div class="filter-group">
-                        <label for="status-filter">筛选：</label>
-                        <select id="status-filter">
-                            <option value="all">所有</option>
-                            <option value="unmastered">未掌握</option>
-                            <option value="mastered">已掌握</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="sort-order">排序：</label>
-                        <select id="sort-order">
-                            <option value="sequential">顺序</option>
-                            <option value="random">随机</option>
-                        </select>
-                    </div>
-                </div>
-            </section>
+                </section>
 
             <section class="card-section">
                 <div class="empty-message" id="empty-message">加载中...</div>
-                <div class="study-card-with-nav" id="sentence-card-container">
+                <div class="card-navigation-container" id="sentence-card-container">
+                    <button id="prev-sentence-btn" class="nav-btn" title="上一句">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-left"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
                     <div class="study-card" id="sentence-card">
                         <div class="spanish"></div>
                         <div class="chinese"></div>
                         <div class="card-actions">
                             <div class="action-item">
-                                <button class="icon-btn" id="index-read-btn" title="朗读">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-volume-2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-                                </button>
-                                <span class="action-label">朗读</span>
-                            </div>
-                            <div class="action-item">
                                 <button class="icon-btn" id="index-slow-read-btn" title="慢速朗读">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="new-icon" width="24" height="24">
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <polyline points="12 6 12 12 16 14"></polyline>
-                                        <path d="M8 18l-4 4-4-4"></path>
-                                    </svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-volume-x"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="22" y1="9" x2="16" y2="15"></line><line x1="16" y1="9" x2="22" y2="15"></line></svg>
                                 </button>
                                 <span class="action-label">慢速朗读</span>
                             </div>
@@ -70,6 +45,12 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-music"><path d="M9.8 19.8l4.4-4.4M12 18v-6l4-2v6"></path><circle cx="5" cy="18" r="4"></circle><circle cx="17" cy="12" r="4"></circle></svg>
                                 </button>
                                 <span class="action-label">逐词朗读</span>
+                            </div>
+                            <div class="action-item">
+                                <button class="icon-btn" id="index-read-btn" title="朗读">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-volume-2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                                </button>
+                                <span class="action-label">朗读</span>
                             </div>
                             <div class="action-item">
                                 <button class="icon-btn" id="index-ai-explain-btn" title="AI解释">
@@ -85,14 +66,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="nav-btn-container">
-                        <button id="prev-sentence-btn" class="nav-btn" title="上一句">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-left"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                        </button>
-                        <button id="next-sentence-btn" class="nav-btn" title="下一句">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                        </button>
-                    </div>
+                    <button id="next-sentence-btn" class="nav-btn" title="下一句">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
                 </div>
                 <div class="notes-container">
                     <h3>笔记</h3>
