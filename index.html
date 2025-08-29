@@ -1,119 +1,81 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>西班牙语学习助手</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>ActionsInfo - Coming Soon</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+            color: #333;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            padding: 40px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .logo {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* 调整后的高度，可根据需要进一步减小 */
+            height: 80px;
+            overflow: hidden;
+        }
+        .logo img {
+            /* 调整后的最大宽度，可根据需要增加 */
+            max-width: 250px;
+            height: auto;
+            object-fit: contain;
+        }
+        h1 {
+            font-size: 3em;
+            color: #1a237e;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        .tagline {
+            font-size: 1.5em;
+            color: #5c6bc0;
+            margin-bottom: 25px;
+            font-weight: 400;
+        }
+        p {
+            font-size: 1.1em;
+            color: #666;
+            line-height: 1.6;
+        }
+        .company-name {
+            margin-top: 30px;
+            font-size: 1.6em;
+            color: #444;
+            font-weight: 500;
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <a href="index.html" class="logo">西班牙语学习助手</a>
-            <nav>
-                <a href="index.html" class="active">句子学习</a>
-                <a href="vocabulary.html">高频词汇</a>
-                <a href="manage.html">管理</a>
-            </nav>
+    <div class="container">
+        <div class="logo">
+            <img src="img/logo.png" alt="ActionsInfo Logo">
         </div>
-    </header>
-
-    <main id="main-content">
-        <div class="container main-content-container">
-            <section class="main-section">
-                <h1 class="page-title">句子学习</h1>
-                <div class="controls">
-                    <div class="filter-group">
-                        <label for="status-filter">筛选：</label>
-                        <select id="status-filter">
-                            <option value="all">所有</option>
-                            <option value="unmastered">未掌握</option>
-                            <option value="mastered">已掌握</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="sort-order">排序：</label>
-                        <select id="sort-order">
-                            <option value="sequential">顺序</option>
-                            <option value="random">随机</option>
-                        </select>
-                    </div>
-                </div>
-            </section>
-
-            <section class="card-section">
-                <div class="empty-message" id="empty-message">加载中...</div>
-                <div class="card-navigation-container" id="sentence-card-container">
-                    <button id="prev-sentence-btn" class="nav-btn" title="上一句">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-left"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                    </button>
-                    <div class="study-card" id="sentence-card">
-                        <div class="spanish"></div>
-                        <div class="chinese"></div>
-                        <div class="card-actions">
-                            <div class="action-item">
-                                <button class="icon-btn" id="index-read-btn" title="朗读">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-volume-2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-                                </button>
-                                <span class="action-label">朗读</span>
-                            </div>
-                            <div class="action-item">
-                                <button class="icon-btn" id="index-slow-read-btn" title="慢速朗读">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-volume-x"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="22" y1="9" x2="16" y2="15"></line><line x1="16" y1="9" x2="22" y2="15"></line></svg>
-                                </button>
-                                <span class="action-label">慢速朗读</span>
-                            </div>
-                            <div class="action-item">
-                                <button class="icon-btn" id="index-word-read-btn" title="逐词朗读">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-music"><path d="M9.8 19.8l4.4-4.4M12 18v-6l4-2v6"></path><circle cx="5" cy="18" r="4"></circle><circle cx="17" cy="12" r="4"></circle></svg>
-                                </button>
-                                <span class="action-label">逐词朗读</span>
-                            </div>
-                            <div class="action-item">
-                                <button class="icon-btn" id="index-ai-explain-btn" title="AI解释">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-help-circle"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.8 0 3.06 3.06 0 0 0-1.8 1.8 1 1 0 0 0 1 1.25V13a1 1 0 0 0 1-1V10a4 4 0 0 0-8 0v1a4 4 0 0 0 2 3.5v2a1 1 0 0 0 1 1h1"></path></svg>
-                                </button>
-                                <span class="action-label">AI解释</span>
-                            </div>
-                            <div class="action-item">
-                                <button class="icon-btn" id="index-mastered-btn" title="标记已掌握">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-8.79"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                                </button>
-                                <span class="action-label">已掌握</span>
-                            </div>
-                        </div>
-                    </div>
-                    <button id="next-sentence-btn" class="nav-btn" title="下一句">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                    </button>
-                </div>
-                <div class="notes-container">
-                    <h3>笔记</h3>
-                    <textarea id="notes" placeholder="在这里写下你的笔记..."></textarea>
-                </div>
-            </section>
-        </div>
-    </main>
-
-    <div id="confirmModal" class="modal">
-        <div class="modal-content">
-            <p id="confirmMessage"></p>
-            <div class="modal-buttons">
-                <button id="confirmBtn" class="btn btn-primary">确定</button>
-                <button id="cancelBtn" class="btn btn-secondary">取消</button>
-            </div>
+        <h1>Website Under Construction</h1>
+        <p class="tagline">Innovating Solutions, Driving Success.</p>
+        <p>We are busy creating an exceptional online experience for you. Please check back soon for our official launch!</p>
+        <div class="company-name">
+            ActionsInfo
         </div>
     </div>
-
-    <div id="aiExplanationModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" id="aiExplanationCloseBtn">&times;</span>
-            <h3 id="aiExplanationTitle"></h3>
-            <div id="aiExplanationContent" class="explanation-content"></div>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
 </body>
 </html>
