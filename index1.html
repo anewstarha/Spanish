@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>西语驾考学习笔记</title>
+    <!-- 引入 Supabase JS 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        nav {
+            display: flex;
+            justify-content: center;
+            background-color: #34495e;
+            padding: 15px;
+            border-radius: 10px 10px 0 0;
+            margin-bottom: 20px;
+        }
+        nav button {
+            background-color: #34495e;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s, transform 0.2s;
+            border-radius: 5px;
+            margin: 0 10px;
+        }
+        nav button:hover {
+            background-color: #496279;
+            transform: translateY(-2px);
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            resize: vertical;
+            min-height: 80px;
+        }
+        .input-group button {
+            padding: 12px 20px;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .input-group button:hover {
+            background-color: #27ae60;
+        }
+        .sentence-list-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        .sentence-list-controls .select-all-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sentence-list-controls .delete-selected-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .sentence-list-controls .delete-selected-btn:hover {
+            background-color: #c0392b;
+        }
+        .sentence-list, .word-list {
+            list-style: none;
+            padding: 0;
+        }
+        .sentence-item {
+            background-color: #ecf0f1;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            transition: background-color 0.3s;
+        }
+        .sentence-item.mastered {
+            background-color: #d4edda;
+        }
+        .sentence-checkbox {
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+        }
+        .sentence-text {
+            flex-grow: 1;
+        }
+        .sentence-text .spanish {
+            font-weight: bold;
+            font-size: 1.1em;
+            display: block;
+        }
+        .sentence-text .chinese {
+            color: #555;
+            font-weight: normal;
+            font-size: 0.9em;
+            font-style: normal;
+            display: block;
+        }
+        .sentence-text [contenteditable="true"] {
+            border: 1px solid #3498db;
+            background-color: #e8f4fd;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .sentence-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2em;
+            margin-left: 10px;
+        }
+        .sentence-actions .read-btn { color: #3498db; }
+        .sentence-actions .slow-read-btn { color: #f39c12; }
+        .sentence-actions .word-read-btn { color: #e67e22; }
+        .sentence-actions .ai-explain-btn { color: #9b59b6; } /* New AI button color */
+        .sentence-actions .delete-btn { color: #e74c3c; }
+        .sentence-actions .mastered-btn { color: #2ecc71; }
+        .sentence-actions .edit-btn { color: #f39c12; }
+        .sentence-actions .save-btn {
+            color: #2ecc71;
+            display: none;
+        }
+        .word-item {
+            background-color: #ecf0f1;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .word-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        .word-text-wrapper {
+            flex-grow: 1;
+        }
+        .word-text-wrapper .spanish-word {
+            font-weight: bold;
+            font-size: 1.1em;
+            display: block;
+        }
+        .word-text-wrapper .chinese-word-translation {
+            color: #555;
+            font-weight: normal;
+            font-size: 0.9em;
+            font-style: normal;
+            display: block;
+        }
+        .word-text-wrapper [contenteditable="true"] {
+            border: 1px solid #3498db;
+            background-color: #e8f4fd;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .word-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2em;
+            margin-left: 10px;
+        }
+        .word-actions .read-btn { color: #3498db; }
+        .word-actions .edit-btn { color: #f39c12; }
+        .word-actions .save-btn {
+            color: #2ecc71;
+            display: none;
+        }
+        .word-sentences-list {
+            list-style: none;
+            padding: 10px 0 0 0;
+            margin: 10px 0 0 0;
+            border-top: 1px solid #ddd;
+            display: none; /* Initially hidden */
+        }
+        .word-sentences-list li {
+            background-color: #f9f9f9;
+            padding: 8px;
+            border-radius: 3px;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .word-sentences-list li .spanish-part {
+            font-weight: bold;
+        }
+        .word-sentences-list li .chinese-part {
+            color: #777;
+        }
+        .word-empty-message {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 20px;
+        }
+        h2 {
+            margin-top: 40px;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 5px;
+        }
+        /* Custom Modal styles for alerts and confirms and AI explanation */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 600px; /* Wider for explanations */
+            text-align: left; /* Align text left for readability */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            max-height: 80vh; /* Max height for scrollable content */
+            overflow-y: auto; /* Enable scrolling for long explanations */
+        }
+        .modal-content h3 {
+            margin-top: 0;
+            text-align: center;
+            color: #2c3e50;
+        }
+        .modal-content p {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .modal-buttons button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            border: none;
+            font-size: 16px;
+        }
+        .modal-buttons .confirm-btn, .modal-buttons .close-btn {
+            background-color: #3498db; /* Blue for action/close */
+            color: white;
+        }
+        .modal-buttons .cancel-btn {
+            background-color: #ccc;
+        }
+        .modal-content .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3498db;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>西语驾考学习笔记</h1>
+        <nav>
+            <button id="show-sentences-btn">句子列表</button>
+            <button id="show-words-btn">高频词汇</button>
+        </nav>
+
+        <!-- 句子页面 -->
+        <div id="sentences-page">
+            <h2 id="sentences-header">所有句子</h2>
+            <div class="input-group">
+                <label>批量添加（每行一个，格式：西语 [|| 中文]）</label>
+                <textarea id="batch-input" placeholder="例如:&#10;Hola, ¿cómo estás?&#10;Gracias, estoy bien. || 谢谢，我很好。"></textarea>
+                <button id="add-btn">批量添加</button>
+            </div>
+            <div class="sentence-list-controls">
+                <div class="select-all-group">
+                    <input type="checkbox" id="selectAllCheckbox">
+                    <label for="selectAllCheckbox">全选</label>
+                </div>
+                <button id="deleteSelectedBtn" class="delete-selected-btn">删除选中项</button>
+            </div>
+            <ul class="sentence-list" id="sentence-list">
+                <!-- 句子列表会通过 JS 动态生成 -->
+            </ul>
+        </div>
+
+        <!-- 高频词页面 -->
+        <div id="words-page" style="display: none;">
+            <h2>高频词汇</h2>
+            <ul class="word-list" id="word-list">
+                <!-- 高频词汇会通过 JS 动态生成 -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- Custom Modal for confirmations -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h3>确认操作</h3>
+            <p id="confirmMessage"></p>
+            <div class="modal-buttons">
+                <button id="confirmBtn" class="confirm-btn">确认</button>
+                <button id="cancelBtn" class="cancel-btn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Explanation Modal -->
+    <div id="aiExplanationModal" class="modal">
+        <div class="modal-content">
+            <h3 id="aiExplanationTitle">AI 句子解释</h3>
+            <div id="aiExplanationContent">
+                <div class="loading-spinner"></div>
+                <p style="text-align: center;">AI 正在生成解释中，请稍候...</p>
+            </div>
+            <div class="modal-buttons">
+                <button id="aiExplanationCloseBtn" class="close-btn">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === 1. Configure Supabase client ===
+        const SUPABASE_URL = 'https://rvarfascuwvponxwdeoe.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2YXJmYXNjdXd2cG9ueHdkZW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNDE5MDcsImV4cCI6MjA3MTgxNzkwN30.KdBVtNYdOw9n8351FWlAgAPCv0WmSnr9vOGgtHCRSnc';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // === 2. Getting DOM elements ===
+        const sentencesPage = document.getElementById('sentences-page');
+        const wordsPage = document.getElementById('words-page');
+        const showSentencesBtn = document.getElementById('show-sentences-btn');
+        const showWordsBtn = document.getElementById('show-words-btn');
+        const sentencesHeader = document.getElementById('sentences-header');
+        const batchInput = document.getElementById('batch-input');
+        const addBtn = document.getElementById('add-btn');
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+        const sentenceList = document.getElementById('sentence-list');
+        const wordList = document.getElementById('word-list');
+        const confirmModal = document.getElementById('confirmModal');
+        const confirmMessage = document.getElementById('confirmMessage');
+        const confirmBtn = document.getElementById('confirmBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+
+        const aiExplanationModal = document.getElementById('aiExplanationModal');
+        const aiExplanationTitle = document = document.getElementById('aiExplanationTitle');
+        const aiExplanationContent = document.getElementById('aiExplanationContent');
+        const aiExplanationCloseBtn = document.getElementById('aiExplanationCloseBtn');
+
+
+        const audio = new Audio(); // Create a single Audio object
+        const commonWordsToFilter = new Set(['el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'de', 'del', 'a', 'al', 'en', 'es', 'son', 'con', 'para', 'por', 'que', 'y', 'o', 'como', 'si', 'mas', 'pero', 'no', 'muy', 'mi', 'su', 'sus', 'sin', 'ni', 'hay', 'alguno', 'algunos', 'mucho', 'muchos', 'poco', 'pocos']);
+        
+        let allSentences = []; // Global variable to store all sentences
+
+        // === 3. Core Functions ===
+
+        // Function to show a specific page and hide others
+        function showPage(pageId) {
+            sentencesPage.style.display = 'none';
+            wordsPage.style.display = 'none';
+            document.getElementById(pageId).style.display = 'block';
+        }
+
+        // Custom modal for confirmations, replacing window.confirm()
+        function showCustomConfirm(message) {
+            return new Promise((resolve) => {
+                confirmMessage.innerText = message;
+                confirmModal.style.display = 'flex';
+                
+                const onConfirm = () => {
+                    confirmModal.style.display = 'none';
+                    confirmBtn.removeEventListener('click', onConfirm);
+                    cancelBtn.removeEventListener('click', onCancel);
+                    resolve(true);
+                };
+
+                const onCancel = () => {
+                    confirmModal.style.display = 'none';
+                    confirmBtn.removeEventListener('click', onConfirm);
+                    cancelBtn.removeEventListener('click', onCancel);
+                    resolve(false);
+                };
+
+                confirmBtn.addEventListener('click', onConfirm);
+                cancelBtn.addEventListener('click', onCancel);
+            });
+        }
+
+        // Function to show the AI explanation modal
+        function showAiExplanation(title, content) {
+            aiExplanationTitle.innerText = title;
+            aiExplanationContent.innerHTML = content;
+            aiExplanationModal.style.display = 'flex';
+        }
+
+        // Function to hide the AI explanation modal
+        aiExplanationCloseBtn.addEventListener('click', () => {
+            aiExplanationModal.style.display = 'none';
+        });
+        
+        // Use Google Text-to-Speech API to synthesize audio
+        // Supports normal and slow modes via SSML
+        async function readTextWithGoogle(text, isSlow = false) {
+            const API_KEY = 'AIzaSyC_OfSDK55ECs7bk5XkNAlO5a8YEuIX2TE';
+            const API_URL = `https://texttospeech.googleapis.com/v1beta1/text:synthesize?key=${API_KEY}`;
+            
+            if (API_KEY === 'YOUR_GOOGLE_API_KEY' || API_KEY.length === 0) {
+                console.warn('Google Text-to-Speech API key is not set. TTS functionality will be disabled.');
+                const errorMessage = '语音功能需要有效的 Google Text-to-Speech API 密钥才能工作。';
+                showCustomConfirm(errorMessage).then(() => {});
+                return;
+            }
+
+            let inputText;
+            if (isSlow) {
+                inputText = `<speak><prosody rate="slow">${text}</prosody></speak>`;
+            } else {
+                inputText = text;
+            }
+
+            const request = {
+                input: isSlow ? { ssml: inputText } : { text: inputText },
+                voice: { languageCode: 'es-ES', ssmlGender: 'FEMALE' },
+                audioConfig: { audioEncoding: 'MP3' },
+            };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(request),
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    console.error('Google API error:', error);
+                    showCustomConfirm('Google API 错误：无法生成语音。').then(() => {});
+                    return;
+                }
+
+                const data = await response.json();
+                const audioContent = data.audioContent;
+
+                audio.pause();
+                audio.currentTime = 0;
+                audio.src = `data:audio/mp3;base64,${audioContent}`;
+                audio.play();
+
+            } catch (error) {
+                console.error('Failed to fetch from Google TTS:', error);
+                showCustomConfirm('无法连接到 Google Text-to-Speech 服务。').then(() => {});
+            }
+        }
+        
+        // Read a sentence word by word with a delay between each word
+        async function readWordByWord(sentence) {
+            const words = sentence.split(/\s+/).filter(word => word.length > 0);
+            
+            for (let i = 0; i < words.length; i++) {
+                await new Promise(resolve => {
+                    readTextWithGoogle(words[i]);
+                    audio.onended = () => {
+                        setTimeout(resolve, 300); 
+                    };
+                });
+            }
+        }
+
+        // Function to get AI explanation for a sentence
+        async function getAiExplanation(spanishSentence) {
+            const systemPrompt = `你是一位专业的西班牙语老师。请用简洁明了的中文，对以下西班牙语句子进行全面的语法、词汇和含义解释。如果句子有特殊用法或文化背景，也请简要说明。请避免冗余的客套话，直接给出解释。`;
+            // !!! 在这里粘贴您的 Google Gemini API 密钥 !!!
+            // !!! 访问 https://aistudio.google.com/ 或 https://console.cloud.google.com/apis/credentials 获取密钥 !!!
+            const apiKey = "AIzaSyA9XOIeJFc3DXlDuuBQRLPYC-hTlJ1e14M"; 
+            // !!! 请替换 above with your actual API key !!!
+
+            if (apiKey === "YOUR_GOOGLE_GEMINI_API_KEY_HERE" || apiKey.length === 0) {
+                showAiExplanation('错误', `<p>请先在代码中配置您的 Google Gemini API 密钥！</p><p>访问 <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a> 或 <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Platform</a> 获取密钥。</p>`);
+                return;
+            }
+
+            const userQuery = `请解释这个西班牙语句子: "${spanishSentence}"`;
+            
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            // Show loading state in the modal
+            showAiExplanation('AI 正在生成解释', `<div class="loading-spinner"></div><p style="text-align: center;">AI 正在生成解释中，请稍候...</p>`);
+
+            try {
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    tools: [{ "google_search": {} }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorDetails = await response.json();
+                    console.error('Gemini API error:', errorDetails);
+                    showAiExplanation('错误', `<p>AI 解释生成失败。请检查控制台错误信息。</p><p>错误详情: ${errorDetails.error.message || '未知错误'}</p>`);
+                    return;
+                }
+
+                const result = await response.json();
+                const explanation = result.candidates?.[0]?.content?.parts?.[0]?.text || '未能获取 AI 解释。';
+                
+                showAiExplanation('AI 句子解释', `<p>${explanation.replace(/\n/g, '<br>')}</p>`);
+
+            } catch (error) {
+                console.error('Failed to fetch from Gemini API:', error);
+                showAiExplanation('错误', `<p>无法连接到 AI 服务。请检查您的网络连接或稍后再试。</p><p>错误详情: ${error.message}</p>`);
+            }
+        }
+        
+        // Fetches and displays high-frequency words from the database
+        async function fetchAndRenderHighFrequencyWords() {
+            try {
+                const { data, error } = await _supabase
+                    .from('high_frequency_words')
+                    .select('*')
+                    .order('word', { ascending: true });
+
+                if (error) {
+                    console.error('Failed to fetch high-frequency words:', error);
+                    wordList.innerHTML = '<p class="word-empty-message">无法加载高频词汇。请检查数据库权限或控制台错误。</p>';
+                    return;
+                }
+                
+                wordList.innerHTML = ''; // Clear previous words
+
+                if (data.length === 0) {
+                    wordList.innerHTML = '<p class="word-empty-message">没有高频词汇。请先在“句子列表”页面添加一些句子！</p>';
+                    return;
+                }
+
+                data.forEach(word => {
+                    const li = document.createElement('li');
+                    li.className = 'word-item';
+                    li.dataset.id = word.id;
+                    li.innerHTML = `
+                        <div class="word-content">
+                            <div class="word-text-wrapper">
+                                <span class="spanish-word" data-field="word">${word.word}</span>
+                                <span class="chinese-word-translation" data-field="chinese_translation">${word.chinese_translation || '点击编辑添加翻译'}</span>
+                            </div>
+                            <div class="word-actions">
+                                <button class="read-btn" title="朗读">🔊</button>
+                                <button class="edit-btn" title="编辑">✏️</button>
+                                <button class="save-btn" title="保存">✔️</button>
+                            </div>
+                        </div>
+                        <ul class="word-sentences-list"></ul>
+                    `;
+
+                    const sentencesList = li.querySelector('.word-sentences-list');
+                    const wordSpan = li.querySelector('.spanish-word');
+                    const translationSpan = li.querySelector('.chinese-word-translation');
+                    const readBtn = li.querySelector('.read-btn');
+                    const editBtn = li.querySelector('.edit-btn');
+                    const saveBtn = li.querySelector('.save-btn');
+
+                    // Event listener to toggle sentence list visibility and render sentences
+                    li.querySelector('.word-content').addEventListener('click', (e) => {
+                        // Avoid triggering if a button was clicked
+                        if (e.target.closest('button')) {
+                            return;
+                        }
+
+                        if (sentencesList.style.display === 'block') {
+                            sentencesList.style.display = 'none';
+                        } else {
+                            renderSentencesForWord(word.word, sentencesList);
+                            sentencesList.style.display = 'block';
+                        }
+                    });
+
+                    // Read word button
+                    readBtn.addEventListener('click', () => readTextWithGoogle(word.word));
+
+                    // Edit button
+                    editBtn.addEventListener('click', () => {
+                        translationSpan.contentEditable = true;
+                        translationSpan.focus();
+                        editBtn.style.display = 'none';
+                        saveBtn.style.display = 'inline-block';
+                    });
+
+                    // Save button
+                    saveBtn.addEventListener('click', async (event) => {
+                        const newTranslation = translationSpan.innerText.trim();
+                        const wordId = parseInt(li.dataset.id, 10);
+                        
+                        await updateWordTranslation(wordId, newTranslation);
+
+                        translationSpan.contentEditable = false;
+                        editBtn.style.display = 'inline-block';
+                        saveBtn.style.display = 'none';
+                    });
+
+                    wordList.appendChild(li);
+                });
+            } catch (err) {
+                console.error('Error in fetchAndRenderHighFrequencyWords:', err);
+                wordList.innerHTML = '<p class="word-empty-message">加载高频词汇时发生错误。请检查控制台。</p>';
+            }
+        }
+
+        // Update a word's translation in the database
+        async function updateWordTranslation(id, newTranslation) {
+            const { error } = await _supabase
+                .from('high_frequency_words')
+                .update({ chinese_translation: newTranslation })
+                .eq('id', id);
+
+            if (error) {
+                console.error('Supabase update error:', error);
+                showCustomConfirm(`保存失败：${error.message}`).then(() => {});
+            } else {
+                showCustomConfirm('翻译保存成功！').then(() => {});
+            }
+        }
+        
+        // Renders sentences related to a specific word
+        function renderSentencesForWord(word, sentencesListElement) {
+            sentencesListElement.innerHTML = ''; // Clear previous sentences
+            
+            const filteredSentences = allSentences.filter(s => 
+                s.spanish_text.toLowerCase().includes(word.toLowerCase())
+            );
+            
+            if (filteredSentences.length === 0) {
+                const li = document.createElement('li');
+                li.innerText = '没有找到包含该单词的句子。';
+                li.style.fontStyle = 'italic';
+                sentencesListElement.appendChild(li);
+                return;
+            }
+
+            filteredSentences.forEach(sentence => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div>
+                        <span class="spanish-part">${sentence.spanish_text}</span>
+                        <span class="chinese-part">${sentence.chinese_translation}</span>
+                    </div>
+                    <div>
+                        <button class="read-btn" title="朗读">🔊</button>
+                    </div>
+                `;
+                li.querySelector('.read-btn').addEventListener('click', () => readTextWithGoogle(sentence.spanish_text));
+                sentencesListElement.appendChild(li);
+            });
+        }
+        
+        // Master function to recalculate and save high-frequency words
+        async function recalculateAndSaveHighFrequencyWords() {
+            // Step 1: Fetch all sentences to get the latest data
+            const { data: sentences, error: fetchError } = await _supabase
+                .from('sentences')
+                .select('*');
+
+            if (fetchError) {
+                console.error('Failed to fetch sentences for word recalculation:', fetchError);
+                return;
+            }
+
+            // Step 2: Clear the existing high-frequency words table
+            const { error: deleteError } = await _supabase
+                .from('high_frequency_words')
+                .delete()
+                .gt('id', 0); // Deletes all rows where id > 0
+
+            if (deleteError) {
+                console.error('Failed to clear high-frequency words:', deleteError);
+                return;
+            }
+
+            // Step 3: Recalculate word frequencies and prepare the new list
+            const wordCounts = new Map();
+            sentences.forEach(sentence => {
+                const words = sentence.spanish_text.toLowerCase().split(/[\s,.;:!?¿¡"“”()\[\]]+/u).filter(word => word.length > 0);
+                words.forEach(word => {
+                    if (!commonWordsToFilter.has(word)) {
+                        wordCounts.set(word, (wordCounts.get(word) || 0) + 1);
+                    }
+                });
+            });
+
+            const topWords = Array.from(wordCounts.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 20);
+
+            const wordsToInsert = topWords.map(([word, count]) => ({
+                word: word,
+                chinese_translation: '' // Default translation is now an empty string
+            }));
+
+            // Step 4: Insert the new, updated list of words
+            if (wordsToInsert.length > 0) {
+                const { error: insertError } = await _supabase
+                    .from('high_frequency_words')
+                    .insert(wordsToInsert);
+                
+                if (insertError) {
+                    console.error('Failed to save new high-frequency words:', insertError);
+                }
+            }
+            
+            // Re-render the word list page if it's currently visible
+            if (wordsPage.style.display === 'block') {
+                 fetchAndRenderHighFrequencyWords();
+            }
+        }
+        
+        // Fetch and display all sentences
+        async function fetchSentences() {
+            const { data, error } = await _supabase
+                .from('sentences')
+                .select('*')
+                .order('id', { ascending: false });
+
+            if (error) {
+                console.error('Failed to fetch sentences:', error);
+                return;
+            }
+            
+            allSentences = data;
+            renderSentences(allSentences);
+        }
+
+        // Render the list of sentences on the page
+        function renderSentences(sentences, title = '所有句子') {
+            sentencesHeader.innerHTML = `<h2>${title}</h2>`;
+            sentenceList.innerHTML = '';
+            
+            if (sentences.length < allSentences.length) {
+                const backBtn = document.createElement('button');
+                backBtn.innerText = '返回所有句子';
+                backBtn.style.cssText = 'padding: 8px 15px; margin-bottom: 10px; background-color: #7f8c8d; color: white; border: none; border-radius: 5px; cursor: pointer;';
+                backBtn.addEventListener('click', () => {
+                    renderSentences(allSentences);
+                });
+                sentencesHeader.appendChild(backBtn);
+            }
+
+            sentences.forEach(sentence => {
+                const li = document.createElement('li');
+                li.className = `sentence-item ${sentence.mastered ? 'mastered' : ''}`;
+                li.dataset.id = sentence.id;
+                
+                li.innerHTML = `
+                    <input type="checkbox" class="sentence-checkbox" data-id="${sentence.id}">
+                    <div class="sentence-text">
+                        <span class="spanish" data-field="spanish_text">${sentence.spanish_text}</span>
+                        <span class="chinese" data-field="chinese_translation">${sentence.chinese_translation}</span>
+                    </div>
+                    <div class="sentence-actions">
+                        <button class="read-btn" title="朗读">🔊</button>
+                        <button class="slow-read-btn" title="慢速朗读">🐢🔊</button>
+                        <button class="word-read-btn" title="逐词朗读">🎤</button>
+                        <button class="ai-explain-btn" title="AI 解释">🧠</button> <!-- New AI Explain button -->
+                        <button class="mastered-btn" title="标记已掌握">${sentence.mastered ? '✅' : '☑️'}</button>
+                        <button class="edit-btn" title="编辑">✏️</button>
+                        <button class="save-btn" title="保存">✔️</button>
+                        <button class="delete-btn" title="删除">🗑️</button>
+                    </div>
+                `;
+                
+                li.querySelector('.read-btn').addEventListener('click', () => readTextWithGoogle(sentence.spanish_text));
+                li.querySelector('.slow-read-btn').addEventListener('click', () => readTextWithGoogle(sentence.spanish_text, true));
+                li.querySelector('.word-read-btn').addEventListener('click', () => readWordByWord(sentence.spanish_text));
+                li.querySelector('.ai-explain-btn').addEventListener('click', () => getAiExplanation(sentence.spanish_text)); // AI button event listener
+                li.querySelector('.mastered-btn').addEventListener('click', () => toggleMastered(sentence.id, !sentence.mastered));
+                li.querySelector('.delete-btn').addEventListener('click', () => deleteSentence(sentence.id));
+                
+                const editBtn = li.querySelector('.edit-btn');
+                const saveBtn = li.querySelector('.save-btn');
+                const spanishSpan = li.querySelector('.spanish');
+                const chineseSpan = li.querySelector('.chinese');
+                
+                editBtn.addEventListener('click', () => {
+                    spanishSpan.contentEditable = true;
+                    chineseSpan.contentEditable = true;
+                    spanishSpan.focus();
+                    editBtn.style.display = 'none';
+                    saveBtn.style.display = 'inline-block';
+                });
+
+                saveBtn.addEventListener('click', async (event) => {
+                    const li = event.target.closest('.sentence-item');
+                    if (!li) return;
+
+                    const newSpanishText = spanishSpan.innerText.trim();
+                    const newChineseText = chineseSpan.innerText.trim();
+                    const sentenceId = parseInt(li.dataset.id, 10);
+                    
+                    // Step 1: 先检查该ID是否存在于数据库
+                    const { data: existingData, error: fetchError } = await _supabase
+                        .from('sentences')
+                        .select('id')
+                        .eq('id', sentenceId)
+                        .limit(1);
+
+                    if (fetchError || !existingData || existingData.length === 0) {
+                        console.error('保存失败：数据库中未找到该句子ID。');
+                        showCustomConfirm('保存失败：该句子可能已被删除或不存在。').then(() => {});
+                        spanishSpan.contentEditable = false;
+                        chineseSpan.contentEditable = false;
+                        editBtn.style.display = 'inline-block';
+                        saveBtn.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Step 2: 如果存在，再进行更新操作
+                    const updates = { 
+                        spanish_text: newSpanishText,
+                        chinese_translation: newChineseText
+                    };
+                    
+                    const { data: updateData, error: updateError } = await _supabase
+                        .from('sentences')
+                        .update(updates)
+                        .eq('id', sentenceId);
+
+                    if (updateError) {
+                        console.error('Supabase 更新错误:', updateError);
+                        showCustomConfirm(`保存失败：${updateError.message}`).then(() => {});
+                    } else {
+                         showCustomConfirm('保存成功！').then(() => {});
+                    }
+                    
+                    spanishSpan.contentEditable = false;
+                    chineseSpan.contentEditable = false;
+                    editBtn.style.display = 'inline-block';
+                    saveBtn.style.display = 'none';
+                });
+                
+                sentenceList.appendChild(li);
+            });
+        }
+        
+        async function addSentences() {
+            const inputText = batchInput.value.trim();
+            if (!inputText) {
+                showCustomConfirm('输入内容不能为空！').then(() => {});
+                return;
+            }
+
+            const lines = inputText.split('\n');
+            const sentencesToProcess = [];
+            let duplicateCount = 0;
+
+            lines.forEach(line => {
+                const parts = line.split('||').map(part => part.trim());
+                if (parts.length > 0 && parts[0]) {
+                    const spanishText = parts[0];
+                    const chineseTranslation = parts.length > 1 ? parts[1] : '';
+                    sentencesToProcess.push({
+                        spanish_text: spanishText,
+                        chinese_translation: chineseTranslation,
+                        mastered: false
+                    });
+                }
+            });
+
+            if (sentencesToProcess.length === 0) {
+                showCustomConfirm('没有检测到有效的句子格式。请确保每行包含西语，并可选地使用 "||" 分隔中文。').then(() => {});
+                return;
+            }
+            
+            const { data: existingSentences, error: fetchError } = await _supabase
+                .from('sentences')
+                .select('spanish_text');
+
+            if (fetchError) {
+                console.error('Failed to fetch existing sentences:', fetchError);
+                showCustomConfirm('获取现有句子失败，无法检查重复。').then(() => {});
+                return;
+            }
+            
+            const existingTextSet = new Set(existingSentences.map(s => s.spanish_text));
+            const sentencesToAdd = [];
+
+            sentencesToProcess.forEach(s => {
+                if (existingTextSet.has(s.spanish_text)) {
+                    duplicateCount++;
+                } else {
+                    sentencesToAdd.push(s);
+                }
+            });
+
+            if (sentencesToAdd.length > 0) {
+                const { error } = await _supabase
+                    .from('sentences')
+                    .insert(sentencesToAdd);
+                
+                if (error) {
+                    console.error('Failed to add sentences:', error);
+                    showCustomConfirm('批量添加失败，请检查控制台了解详情。').then(() => {});
+                    return;
+                }
+            }
+            
+            await recalculateAndSaveHighFrequencyWords();
+
+            batchInput.value = '';
+
+            let message = '';
+            if (sentencesToAdd.length > 0) {
+                message += `成功添加了 ${sentencesToAdd.length} 条新句子。`;
+            }
+            if (duplicateCount > 0) {
+                if (message) message += '\n';
+                message += `其中有 ${duplicateCount} 条句子是重复的，因此未被添加。`;
+            }
+            if (message) {
+                showCustomConfirm(message).then(() => {});
+            }
+        }
+        
+        async function deleteSentence(id) {
+            const confirmed = await showCustomConfirm('你确定要删除这条句子吗？');
+            if (confirmed) {
+                const { error } = await _supabase
+                    .from('sentences')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) {
+                    console.error('Failed to delete:', error);
+                    showCustomConfirm('删除失败，请检查控制台了解详情。').then(() => {});
+                } else {
+                    await recalculateAndSaveHighFrequencyWords();
+                }
+            }
+        }
+
+        async function deleteSelectedSentences() {
+            const checkedBoxes = document.querySelectorAll('.sentence-checkbox:checked');
+            if (checkedBoxes.length === 0) {
+                showCustomConfirm('请至少选择一个要删除的句子！').then(() => {});
+                return;
+            }
+            
+            const confirmed = await showCustomConfirm(`你确定要删除选中的 ${checkedBoxes.length} 条句子吗？`);
+            if (!confirmed) {
+                return;
+            }
+
+            const idsToDelete = Array.from(checkedBoxes).map(cb => cb.dataset.id);
+            
+            const { error } = await _supabase
+                .from('sentences')
+                .delete()
+                .in('id', idsToDelete);
+
+            if (error) {
+                console.error('Failed to delete selected sentences:', error);
+                showCustomConfirm('批量删除失败，请检查控制台了解详情。').then(() => {});
+            } else {
+                selectAllCheckbox.checked = false;
+                await recalculateAndSaveHighFrequencyWords();
+            }
+        }
+
+        // Toggle the 'mastered' status
+        async function toggleMastered(id, newStatus) {
+            const { error } = await _supabase
+                .from('sentences')
+                .update({ mastered: newStatus })
+                .eq('id', id);
+
+            if (error) {
+                console.error('Failed to update status:', error);
+                showCustomConfirm('更新掌握状态失败，请检查控制台了解详情。').then(() => {});
+            }
+        }
+
+        // Set up Supabase Realtime listener for all database changes
+        function setupRealtimeListener() {
+            _supabase.channel('public:sentences')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'sentences' }, payload => {
+                    fetchSentences();
+                })
+                .subscribe();
+        }
+
+        // === 4. Event listeners ===
+        window.addEventListener('load', () => {
+             fetchSentences();
+             setupRealtimeListener();
+             showPage('sentences-page');
+        });
+        
+        addBtn.addEventListener('click', addSentences);
+        showSentencesBtn.addEventListener('click', () => showPage('sentences-page'));
+        showWordsBtn.addEventListener('click', () => {
+             showPage('words-page');
+             fetchAndRenderHighFrequencyWords();
+        });
+        selectAllCheckbox.addEventListener('change', (e) => {
+            const checkboxes = document.querySelectorAll('.sentence-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = e.target.checked;
+            });
+        });
+        deleteSelectedBtn.addEventListener('click', deleteSelectedSentences);
+    </script>
+</body>
+</html>

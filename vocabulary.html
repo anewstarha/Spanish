@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高频词汇</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <a href="index.html" class="logo">西班牙语学习助手</a>
+            <nav>
+                <a href="index.html">句子学习</a>
+                <a href="vocabulary.html" class="active">高频词汇</a>
+                <a href="manage.html">管理</a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main-content">
+        <div class="container main-content-container">
+            <section class="main-section">
+                <h1 class="page-title">高频词汇</h1>
+                <div class="controls">
+                    <div class="filter-group">
+                        <label for="word-status-filter">筛选：</label>
+                        <select id="word-status-filter">
+                            <option value="all">所有</option>
+                            <option value="unmastered">未掌握</option>
+                            <option value="mastered">已掌握</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="word-sort-order">排序：</label>
+                        <select id="word-sort-order">
+                            <option value="sequential">按频率</option>
+                            <option value="random">随机</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card-section">
+                <div class="empty-message" id="empty-vocabulary-message">加载中...</div>
+                <div class="card-navigation-container" id="word-card-container">
+                    <button id="prev-word-btn" class="nav-btn" title="上一个词">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-left"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <div class="study-card" id="word-card">
+                        <div class="word-text">
+                            <h2 class="spanish-word"></h2>
+                            <p class="chinese-translation"></p>
+                        </div>
+                        <div class="card-actions">
+                            <div class="action-item">
+                                <button class="icon-btn" id="word-slow-read-btn" title="慢速朗读">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-volume-x"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="22" y1="9" x2="16" y2="15"></line><line x1="16" y1="9" x2="22" y2="15"></line></svg>
+                                </button>
+                                <span class="action-label">慢速朗读</span>
+                            </div>
+                            <div class="action-item">
+                                <button class="icon-btn" id="word-read-btn" title="朗读">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-volume-2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                                </button>
+                                <span class="action-label">朗读</span>
+                            </div>
+                            <div class="action-item">
+                                <button class="icon-btn" id="word-mastered-btn" title="标记已掌握">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-8.79"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                </button>
+                                <span class="action-label">已掌握</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="next-word-btn" class="nav-btn" title="下一个词">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
+                </div>
+                <div class="notes-container">
+                    <h3>来源句</h3>
+                    <p id="word-source-sentence" placeholder=""></p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <p id="confirmMessage"></p>
+            <div class="modal-buttons">
+                <button id="confirmBtn" class="btn btn-primary">确定</button>
+                <button id="cancelBtn" class="btn btn-secondary">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

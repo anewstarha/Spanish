@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理句子</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="manage-page">
+    <header>
+        <div class="container">
+            <a href="index.html" class="logo">西班牙语学习助手</a>
+            <nav>
+                <a href="index.html">句子学习</a>
+                <a href="vocabulary.html">高频词汇</a>
+                <a href="manage.html" class="active">管理</a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main-content">
+        <div class="container main-content-container">
+            <section class="main-section">
+                <h1 class="page-title">管理句子</h1>
+            </section>
+
+            <div class="manage-grid">
+                <div class="card batch-add">
+                    <h2 class="section-title">批量添加句子</h2>
+                    <textarea id="batch-input" placeholder="每行输入一个西班牙语句子..."></textarea>
+                    <button id="add-batch-button" class="btn btn-primary">添加句子</button>
+                </div>
+                
+                <div class="card sentence-list-card">
+                    <div class="sentence-list-header" id="sentences-header">
+                        <h2 class="section-title">现有句子</h2>
+                        <input type="text" id="sentence-search" placeholder="搜索句子...">
+                    </div>
+                    <div class="list-controls">
+                        <div class="header-actions">
+                            <label for="selectAllCheckbox">全选</label>
+                            <input type="checkbox" id="selectAllCheckbox">
+                            <button id="deleteSelectedBtn" class="btn btn-danger">删除选中</button>
+                        </div>
+                    </div>
+                    <ul id="sentence-list">
+                        </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <p id="confirmMessage"></p>
+            <div class="modal-buttons">
+                <button id="confirmBtn" class="btn btn-primary">确定</button>
+                <button id="cancelBtn" class="btn btn-secondary">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
