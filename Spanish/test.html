@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SVG 图标预览</title>
+    <title>SVG 图标测试页面</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -25,7 +25,7 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
-
+        
         h1 {
             color: #2c3e50;
             margin-bottom: 30px;
@@ -37,7 +37,7 @@
             flex-wrap: wrap;
             gap: 30px;
         }
-
+        
         .icon-item {
             display: flex;
             flex-direction: column;
@@ -62,17 +62,77 @@
             background-color: #bdc3c7;
         }
 
+        /* SVG 通用样式 */
         .icon-btn svg {
-            stroke: #333;
+            stroke: #333; /* 默认描边颜色 */
             stroke-width: 2;
-            fill: none;
+            fill: none; /* 默认不填充 */
             stroke-linecap: round;
             stroke-linejoin: round;
+            overflow: visible; /* 允许部分内容超出viewBox */
         }
 
-        .icon-btn .fill-icon {
+        /* 朗读和逐词朗读图标保持默认大小 */
+        #read-icon svg,
+        #word-read-icon svg {
+            width: 35px; /* 调整为适中大小 */
+            height: 35px; /* 调整为适中大小 */
+        }
+        
+        /* 慢速朗读和AI解释图标稍微大一点 */
+        #slow-read-icon svg,
+        #ai-explain-icon svg {
+            width: 60px; /* 再次放大图标 */
+            height: 60px; /* 再次放大图标 */
+        }
+
+        /* 朗读图标的特殊样式 (填充颜色) */
+        #read-icon svg path {
             fill: #333;
             stroke: none;
+        }
+
+        /* 乌龟图标的特殊样式调整 */
+        #slow-read-icon svg {
+            viewBox: 0 0 128 128;
+        }
+        #slow-read-icon svg rect,
+        #slow-read-icon svg ellipse,
+        #slow-read-icon svg line,
+        #slow-read-icon svg circle {
+            fill: none;
+            stroke: #333;
+            stroke-width: 4;
+        }
+        #slow-read-icon svg circle[r="2"] {
+             fill: #333;
+             stroke: none;
+             r: 2;
+        }
+        #slow-read-icon svg circle[r="1"] {
+             fill: #fff;
+             stroke: none;
+             r: 1;
+        }
+        #slow-read-icon svg > rect {
+            display: none; 
+        }
+
+        /* AI 解释图标的样式调整 */
+        #ai-explain-icon svg {
+            viewBox: 0 0 128 128;
+        }
+        #ai-explain-icon svg rect {
+            display: none;
+        }
+        #ai-explain-icon svg path {
+            fill: none;
+            stroke: #333;
+        }
+        #ai-explain-icon svg text {
+            fill: #333;
+            font-weight: 700;
+            font-size: 40px;
         }
     </style>
 </head>
@@ -81,35 +141,60 @@
         <h1>新版 SVG 图标预览</h1>
         <div class="icons-display">
             <div class="icon-item">
-                <button id="turtle-play-icon" class="icon-btn" title="乌龟加播放三角">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="40" height="40">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-8.79"/>
-                        <path d="M20 5l2 2-2 2"/>
-                        <path d="M12 11.5l-4 2.5v-5z" class="fill-icon"/>
+                <button id="read-icon" class="icon-btn" title="朗读">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M5 3l14 9-14 9z"></path>
                     </svg>
                 </button>
-                <span class="icon-label">乌龟加播放三角</span>
-            </div>
-
-            <div class="icon-item">
-                <button id="volume-minus-icon" class="icon-btn" title="音量条减速">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="40" height="40">
-                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                        <line x1="16" y1="12" x2="22" y2="12"></line>
-                    </svg>
-                </button>
-                <span class="icon-label">音量条减速</span>
+                <span class="icon-label">朗读</span>
             </div>
             
             <div class="icon-item">
-                <button id="clock-arrow-icon" class="icon-btn" title="时间指针减速">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="40" height="40">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                        <path d="M8 18l-4 4-4-4"></path>
+                <button id="slow-read-icon" class="icon-btn" title="慢速朗读">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+                        <title id="title">Turtle Icon</title>
+                        <desc id="desc">A turtle icon for slow playback.</desc>
+                        <ellipse cx="64" cy="64" rx="32" ry="24" fill="none" stroke="#333" stroke-width="3"/>
+                        <ellipse cx="64" cy="64" rx="24" ry="18" fill="none" stroke="#333" stroke-width="2"/>
+                        <line x1="64" y1="46" x2="64" y2="82" stroke="#333" stroke-width="2"/>
+                        <line x1="46" y1="64" x2="82" y2="64" stroke="#333" stroke-width="2"/>
+                        <circle cx="100" cy="64" r="8" fill="none" stroke="#333" stroke-width="2"/>
+                        <circle cx="103" cy="62" r="2" fill="#333" stroke="none"/>
+                        <circle cx="103" cy="62" r="1" fill="#fff" stroke="none"/>
+                        <circle cx="40" cy="48" r="6" fill="none" stroke="#333" stroke-width="2"/>
+                        <circle cx="40" cy="80" r="6" fill="none" stroke="#333" stroke-width="2"/>
+                        <circle cx="88" cy="48" r="6" fill="none" stroke="#333" stroke-width="2"/>
+                        <circle cx="88" cy="80" r="6" fill="none" stroke="#333" stroke-width="2"/>
+                        <circle cx="28" cy="64" r="4" fill="none" stroke="#333" stroke-width="2"/>
                     </svg>
                 </button>
-                <span class="icon-label">时间指针减速</span>
+                <span class="icon-label">慢速朗读</span>
+            </div>
+            
+            <div class="icon-item">
+                <button id="word-read-icon" class="icon-btn" title="逐词朗读">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                </button>
+                <span class="icon-label">逐词朗读</span>
+            </div>
+            
+            <div class="icon-item">
+                <button id="ai-explain-icon" class="icon-btn" title="AI 解释">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+                        <title id="title">AI Heart Icon</title>
+                        <desc id="desc">An outline heart with lowercase "ai" inside.</desc>
+                        <g transform="translate(0, 10)"> 
+                            <path d="M64 36 C56 20, 32 22, 32 44 C32 64, 64 86, 64 86 C64 86, 96 64, 96 44 C96 22, 72 20, 64 36 Z" fill="none" stroke="#333" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" />
+                            <text x="64" y="70" text-anchor="middle" font-family="Inter, Roboto, Arial, sans-serif" font-weight="700" font-size="40" fill="#333">ai</text>
+                        </g>
+                    </svg>
+                </button>
+                <span class="icon-label">AI 解释</span>
             </div>
         </div>
     </div>

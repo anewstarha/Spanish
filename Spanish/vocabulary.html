@@ -16,11 +16,14 @@
                 <a href="vocabulary.html" class="active">高频词汇</a>
                 <a href="manage.html">管理</a>
             </nav>
-            <div class="filter-controls">
-                <button id="filter-icon-btn" class="filter-icon-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-filter"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-                </button>
-                <div id="filter-panel" class="filter-panel">
+        </div>
+    </header>
+
+    <main id="main-content">
+        <div class="container main-content-container">
+            <section class="main-section">
+                <h1 class="page-title">高频词汇</h1>
+                <div class="controls">
                     <div class="filter-group">
                         <label for="word-status-filter">筛选：</label>
                         <select id="word-status-filter">
@@ -32,17 +35,13 @@
                     <div class="filter-group">
                         <label for="word-sort-order">排序：</label>
                         <select id="word-sort-order">
-                            <option value="default">默认</option>
+                            <option value="sequential">按频率</option>
                             <option value="random">随机</option>
                         </select>
                     </div>
                 </div>
-            </div>
-        </div>
-    </header>
+            </section>
 
-    <main id="main-content">
-        <div class="container main-content-container">
             <section class="card-section">
                 <div class="empty-message" id="empty-vocabulary-message">加载中...</div>
                 <div class="card-navigation-container" id="word-card-container">
