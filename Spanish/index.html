@@ -24,23 +24,24 @@
             <section class="main-section">
                 
                 <div class="controls">
-                    <div class="filter-group">
-                        <label for="status-filter">筛选：</label>
-                        <select id="status-filter">
-                            <option value="all">所有</option>
-                            <option value="unmastered">未掌握</option>
-                            <option value="mastered">已掌握</option>
-                        </select>
+                    <div class="control-group">
+                        <label class="control-label">筛选：</label>
+                        <div id="status-filter-group" class="segmented-control">
+                            <button data-value="all">所有</button>
+                            <button data-value="unmastered" class="active">未掌握</button>
+                            <button data-value="mastered">已掌握</button>
+                        </div>
                     </div>
-                    <div class="filter-group">
-                        <label for="sort-order">排序：</label>
-                        <select id="sort-order">
-                            <option value="sequential">顺序</option>
-                            <option value="random">随机</option>
-                        </select>
+                    <div class="control-group">
+                        <label class="control-label">模式：</label>
+                        <div id="sort-order-group" class="segmented-control">
+                            <button data-value="sequential" class="active">顺序</button>
+                            <button data-value="random">随机</button>
+                            <button data-value="single">单句</button>
+                        </div>
                     </div>
                 </div>
-            </section>
+                </section>
 
             <section class="card-section">
                 <div class="empty-message" id="empty-message">加载中...</div>
@@ -84,19 +85,19 @@
                                 <span class="action-label">已掌握</span>
                             </div>
                         </div>
+
+                        <div class="utility-actions">
+                            <button id="utility-menu-btn" class="icon-btn utility-btn" title="更多操作">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                            </button>
+                            <div id="utility-menu" class="utility-menu">
+                                <button id="add-sentence-btn">新增句子</button>
+                                <button id="edit-sentence-btn">编辑当前句</button>
+                                <button id="delete-sentence-btn">删除当前句</button>
+                            </div>
+                        </div>
+
                     </div>
-                    <div class="nav-btn-container">
-                        <button id="prev-sentence-btn" class="nav-btn" title="上一句">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-left"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                        </button>
-                        <button id="next-sentence-btn" class="nav-btn" title="下一句">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                        </button>
-                    </div>
-                </div>
-                <div class="notes-container">
-                    <h3>笔记</h3>
-                    <textarea id="notes" placeholder="在这里写下你的笔记..."></textarea>
                 </div>
             </section>
         </div>
@@ -119,6 +120,36 @@
             <div id="aiExplanationContent" class="explanation-content"></div>
         </div>
     </div>
+    
+    <div id="addSentenceModal" class="modal">
+        <div class="modal-content">
+            <h3>新增句子</h3>
+            <form id="add-sentence-form" class="modal-form">
+                <textarea id="new-spanish-text" placeholder="输入西班牙语句子..." required></textarea>
+                <textarea id="new-chinese-text" placeholder="输入中文翻译..." required></textarea>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">保存</button>
+                    <button type="button" id="cancel-add-btn" class="btn btn-secondary">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editSentenceModal" class="modal">
+        <div class="modal-content">
+            <h3>编辑句子</h3>
+            <form id="edit-sentence-form" class="modal-form">
+                <input type="hidden" id="edit-sentence-id">
+                <textarea id="edit-spanish-text" required></textarea>
+                <textarea id="edit-chinese-text" required></textarea>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">保存更改</button>
+                    <button type="button" id="cancel-edit-btn" class="btn btn-secondary">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 
     <script src="script.js"></script>
 </body>
