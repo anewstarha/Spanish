@@ -27,21 +27,19 @@
             <div class="manage-grid">
                 <div class="card batch-add">
                     <h2 class="section-title">批量添加句子</h2>
-                    <textarea id="batch-input" placeholder="每行输入一个西班牙语句子..."></textarea>
-                    <button id="add-batch-button" class="btn btn-primary">添加句子</button>
+                    <p class="section-subtitle">一行一句，程序将自动获取翻译并过滤重复项。</p>
+                    <textarea id="batch-input" placeholder="在此处粘贴您的西班牙语句子..."></textarea>
+                    <button id="add-batch-button" class="btn btn-primary btn-full-width">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <span class="btn-text">添加句子</span>
+                        <div class="spinner"></div>
+                    </button>
                 </div>
                 
                 <div class="card sentence-list-card">
                     <div class="sentence-list-header" id="sentences-header">
                         <h2 class="section-title">现有句子</h2>
                         <input type="text" id="sentence-search" placeholder="搜索句子...">
-                    </div>
-                    <div class="list-controls">
-                        <div class="header-actions">
-                            <label for="selectAllCheckbox">全选</label>
-                            <input type="checkbox" id="selectAllCheckbox">
-                            <button id="deleteSelectedBtn" class="btn btn-danger">删除选中</button>
-                        </div>
                     </div>
                     <ul id="sentence-list">
                     </ul>

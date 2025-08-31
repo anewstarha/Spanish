@@ -7,8 +7,13 @@
     --muted-color: #666;
     --border-color: #dee2e6;
     --danger-color: #dc3545;
+    --success-color: #28a745;
     --shadow-color: rgba(0, 0, 0, 0.1);
     --light-blue-bg: #e7f3ff;
+}
+
+html, body {
+    height: 100%;
 }
 
 body {
@@ -18,6 +23,8 @@ body {
     background-color: var(--background-color);
     color: var(--text-color);
     line-height: 1.6;
+    display: flex;
+    flex-direction: column;
 }
 
 .container {
@@ -33,6 +40,7 @@ header {
     position: sticky;
     top: 0;
     z-index: 1000;
+    flex-shrink: 0;
 }
 
 header .container {
@@ -62,11 +70,23 @@ nav a:hover, nav a.active {
 
 main {
     padding: 2rem 0;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.content-wrapper {
+    width: 100%;
+    flex-grow: 1;
+    display: flex;
 }
 
 .main-content-container {
-    padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }
+
 
 .main-section {
     margin-bottom: 2rem;
@@ -80,7 +100,6 @@ main {
     margin-bottom: 2rem;
 }
 
-/* === MODIFIED START: New styles for segmented controls === */
 .control-group {
     display: flex;
     align-items: center;
@@ -120,14 +139,14 @@ main {
     color: var(--primary-color);
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
-/* === MODIFIED END === */
-
 
 .card-section {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    flex-grow: 1;
+    width: 100%;
 }
 
 .empty-message {
@@ -147,6 +166,7 @@ main {
     align-items: center;
     width: 100%;
     max-width: 600px;
+    position: relative;
 }
 
 .study-card {
@@ -162,10 +182,16 @@ main {
     transition: transform 0.3s ease;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
     position: relative;
     overflow: hidden; 
+}
+
+.card-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
 }
 
 .study-card::before, .study-card::after {
@@ -179,6 +205,11 @@ main {
     background-repeat: no-repeat;
     background-size: 30px; 
     z-index: 1;
+}
+
+.study-card.is-locked:hover::before,
+.study-card.is-locked:hover::after {
+    opacity: 0;
 }
 
 .study-card::before {
@@ -203,12 +234,12 @@ main {
     transform: translateY(-5px);
 }
 
-.spanish, .chinese, .card-actions {
+.spanish, .chinese, .card-actions, .card-footer {
     position: relative;
     z-index: 2;
 }
 
-.spanish, .spanish-word {
+.spanish {
     font-size: 2.2rem;
     font-weight: bold;
     color: var(--primary-color);
@@ -216,11 +247,44 @@ main {
     line-height: 1.4;
 }
 
-.chinese, .chinese-translation {
+.chinese {
     font-size: 1.2rem;
     color: var(--muted-color);
     min-height: 2em;
 }
+
+.source-sentence {
+    font-size: 0.9rem;
+    color: var(--muted-color);
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    font-style: italic;
+}
+.source-sentence::before {
+    content: '例句：';
+    font-weight: bold;
+    font-style: normal;
+}
+
+#word-frequency-badge {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: var(--card-background);
+    background-color: var(--secondary-color);
+    padding: 2px 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    line-height: 1;
+    margin-left: 0.5rem;
+    vertical-align: super;
+}
+
+#word-frequency-badge:hover {
+    background-color: var(--primary-color);
+}
+
 
 .highlight-word {
     color: #0056b3;
@@ -242,11 +306,13 @@ main {
 }
 
 .card-actions {
-    margin-top: 1.5rem;
     display: flex;
-    gap: 1rem;
+    gap: 1.5rem;
     justify-content: center;
     flex-wrap: wrap;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 2rem;
 }
 
 .action-item {
@@ -259,6 +325,7 @@ main {
 .action-label {
     font-size: 0.75rem;
     color: var(--muted-color);
+    white-space: nowrap;
 }
 
 .icon-btn {
@@ -293,82 +360,85 @@ main {
     100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
 }
 
-.icon-btn.mastered {
-    background-color: #28a745;
-    color: white;
-    border-color: #28a745;
-}
-
-.icon-btn.mastered:hover {
-    background-color: #218838;
-}
-
-.utility-actions {
-    position: absolute;
-    bottom: 1rem;
-    right: 1rem;
-    z-index: 3;
-}
-.utility-btn {
-    padding: 0.5rem;
-    color: var(--secondary-color);
-}
-.utility-menu {
-    display: none;
-    position: absolute;
-    bottom: 100%;
-    right: 0;
-    background-color: var(--card-background);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    padding: 0.5rem;
-    width: 150px;
-    margin-bottom: 0.5rem;
-}
-.utility-menu.visible {
-    display: block;
-}
-.utility-menu button {
-    display: block;
+.card-footer {
     width: 100%;
-    padding: 0.75rem 1rem;
-    border: none;
-    background: none;
-    text-align: left;
+    max-width: 600px;
+    box-sizing: border-box;
+    margin-top: 1rem;
+    padding: 0 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 2.5rem;
+}
+
+.mastered-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     cursor: pointer;
-    border-radius: 4px;
+    color: var(--muted-color);
+    font-size: 0.9rem;
+    transition: color 0.2s;
 }
-.utility-menu button:hover {
-    background-color: var(--background-color);
+
+.mastered-toggle .mastered-icon {
+    stroke: var(--muted-color);
+    transition: stroke 0.2s, fill 0.2s;
 }
-#delete-sentence-btn {
+
+.mastered-toggle:hover {
+    color: var(--text-color);
+}
+.mastered-toggle:hover .mastered-icon {
+    stroke: var(--text-color);
+}
+
+.mastered-toggle.mastered {
+    color: var(--success-color);
+    font-weight: 500;
+}
+.mastered-toggle.mastered .mastered-icon {
+    stroke: var(--success-color);
+    fill: var(--success-color);
+}
+.mastered-toggle.mastered .mastered-icon polyline {
+    stroke: white;
+}
+
+
+.footer-actions {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.footer-actions a {
+    color: var(--muted-color);
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.footer-actions a:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+#delete-sentence-link:hover {
     color: var(--danger-color);
 }
 
-#word-source-sentence {
-    width: 100%; min-height: 150px; padding: 1rem; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; box-sizing: border-box; white-space: pre-wrap; text-align: left; background-color: #f8f9fa; color: #555;
-}
-
-.card {
-    background-color: var(--card-background); padding: 2rem; border-radius: 8px; box-shadow: 0 4px 8px var(--shadow-color);
-}
-
-.btn {
-    padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; font-weight: bold; transition: background-color 0.2s, transform 0.2s;
-}
-.btn-primary { background-color: var(--primary-color); color: white; }
-.btn-primary:hover { background-color: #0056b3; transform: translateY(-2px); }
-.btn-danger { background-color: var(--danger-color); color: white; }
-.btn-danger:hover { background-color: #c82333; transform: translateY(-2px); }
-.btn-secondary { background-color: var(--secondary-color); color: white; }
-.btn-secondary:hover { background-color: #5a6268; transform: translateY(-2px); }
-
 .modal { display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center; }
-.modal-content { background-color: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); width: 90%; max-width: 500px; text-align: center; }
-#aiExplanationModal .modal-content { max-width: 700px; text-align: left; position: relative; }
-#aiExplanationTitle { color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem; }
-.explanation-content { max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
-.close-button { position: absolute; top: 10px; right: 15px; font-size: 1.5rem; font-weight: bold; cursor: pointer; color: #aaa; }
+.modal-content { background-color: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); width: 90%; max-width: 500px; text-align: center; position: relative; }
+#aiExplanationModal .modal-content, #sentenceListModal .modal-content { max-width: 700px; text-align: left; }
+#aiExplanationTitle, #sentenceListTitle { color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem; text-align: left;}
+.explanation-content, .sentence-list-content { max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
+.sentence-list-content { text-align: left; }
+.sentence-list-item { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background-color 0.2s; }
+.sentence-list-item:last-child { border-bottom: none; }
+.sentence-list-item:hover { background-color: var(--light-blue-bg); }
+.close-button { position: absolute; top: 10px; right: 20px; font-size: 1.5rem; font-weight: bold; cursor: pointer; color: #aaa; }
 .close-button:hover { color: #333; }
 .modal-buttons { margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem; }
 
@@ -394,11 +464,45 @@ main {
 
 .manage-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start; }
 .batch-add { display: flex; flex-direction: column; }
-.batch-add textarea { height: 250px; padding: 1rem; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; resize: vertical; margin-bottom: 1rem; }
+.batch-add .section-subtitle {
+    font-size: 0.9rem;
+    color: var(--muted-color);
+    margin-top: -0.5rem;
+    margin-bottom: 1rem;
+}
+.batch-add textarea {
+    height: 250px;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    resize: vertical;
+    margin-bottom: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.batch-add textarea:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+    outline: none;
+}
+.btn-full-width {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+.btn .btn-icon { display: block; }
+.btn .spinner { display: none; width: 20px; height: 20px; border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
+.btn.loading .btn-text, .btn.loading .btn-icon { display: none; }
+.btn.loading .spinner { display: block; }
+
 .sentence-list-card { padding: 2rem; }
 .sentence-list-header { display: flex; flex-direction: column; gap: 1rem; border-bottom: 2px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1rem; }
 #sentence-search { width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem; }
 #sentence-list { list-style: none; padding: 0; margin: 0; max-height: 60vh; overflow-y: auto; }
+#sentence-list .sentence-item { cursor: pointer; transition: background-color 0.2s; border-radius: 4px; }
+#sentence-list .sentence-item:hover { background-color: var(--light-blue-bg); }
 .sentence-item { display: flex; align-items: center; gap: 1rem; padding: 0.8rem 0; border-bottom: 1px solid var(--border-color); }
 .sentence-item:last-child { border-bottom: none; }
 .sentence-text { flex-grow: 1; display: flex; flex-direction: column; line-height: 1.4; }
@@ -407,13 +511,35 @@ main {
 .empty-list-message { text-align: center; color: var(--muted-color); padding: 2rem; }
 
 @media (max-width: 768px) {
+    .controls {
+        gap: 1rem;
+        flex-direction: column;
+        align-items: stretch;
+    }
     header .container { flex-direction: column; gap: 1rem; }
     nav a { margin: 0 0.5rem; }
-    main { padding: 1rem 0; }
-    .study-card { padding: 1.5rem; min-height: 200px; }
-    .spanish, .spanish-word { font-size: 1.8rem; }
-    .chinese, .chinese-translation { font-size: 1rem; }
-    .card-actions { gap: 0.5rem; }
+    main { 
+        padding: 1rem 0;
+        min-height: 0;
+    }
+    .study-card { padding: 1.5rem; min-height: 280px; }
+    .spanish { 
+        font-size: 1.8rem; 
+    }
+    .chinese { 
+        font-size: 1rem; 
+    }
+    .card-actions { 
+        gap: 0.8rem;
+        padding-top: 1.5rem;
+    }
+    .card-footer {
+        margin-top: 1.5rem;
+        padding: 0;
+    }
+    .footer-actions {
+        gap: 1rem;
+    }
     .sentence-item { flex-wrap: wrap; }
     .manage-grid { grid-template-columns: 1fr; }
     .study-card::before, .study-card::after {
