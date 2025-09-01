@@ -1,14 +1,18 @@
-// === 1. Configure Supabase client ===
-const SUPABASE_URL = 'https://rvarfascuwvponxwdeoe.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2YXJmYXNjdXd2cG9ueHdkZW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyNDE5MDcsImV4cCI6MjA3MTgxNzkwN30.KdBVtNYdOw9n8351FWlAgAPCv0WmSnr9vOGgtHCRSnc';
-const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// === 页面保护 ===
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof protectPage === 'function') {
+        protectPage();
+    }
+});
 
-// === 2. Getting DOM elements ===
+// === 1. 配置 Supabase 客户端 ===
+const _supabase = window.supabaseClient;
+
+// === 2. 获取 DOM 元素 ===
+// ... (所有 DOM 元素获取部分保持不变) ...
 const isIndexPage = document.body.id === 'index-page';
 const isManagePage = document.body.classList.contains('manage-page');
 const isVocabularyPage = !!document.getElementById('word-card-container');
-
-// Index Page elements
 const statusFilterGroup = document.getElementById('status-filter-group');
 const sortOrderGroup = document.getElementById('sort-order-group');
 const sentenceCardContainer = document.getElementById('sentence-card-container');
@@ -30,15 +34,11 @@ const addSentenceForm = document.getElementById('add-sentence-form');
 const editSentenceForm = document.getElementById('edit-sentence-form');
 const cancelAddBtn = document.getElementById('cancel-add-btn');
 const cancelEditBtn = document.getElementById('cancel-edit-btn');
-
-// Manage Page elements
 const batchInput = document.getElementById('batch-input');
 const addBatchBtn = document.getElementById('add-batch-button');
 const sentenceList = document.getElementById('sentence-list');
 const sentenceSearch = document.getElementById('sentence-search');
 let allSentences = []; 
-
-// Vocabulary Page elements
 const wordCardContainer = document.getElementById('word-card-container');
 const wordCard = document.getElementById('word-card');
 const emptyVocabularyMessage = document.getElementById('empty-vocabulary-message');
@@ -52,8 +52,6 @@ const wordStatusFilterGroup = document.getElementById('word-status-filter-group'
 const wordSortOrderGroup = document.getElementById('word-sort-order-group');
 const wordMasteredToggle = document.getElementById('word-mastered-toggle');
 let allWords = [];
-
-// Modals
 const confirmModal = document.getElementById('confirmModal');
 const confirmMessage = document.getElementById('confirmMessage');
 const confirmBtn = document.getElementById('confirmBtn');
@@ -66,26 +64,19 @@ const sentenceListModal = document.getElementById('sentenceListModal');
 const sentenceListTitle = document.getElementById('sentenceListTitle');
 const sentenceListContent = document.getElementById('sentence-list-content');
 const sentenceListCloseBtn = document.getElementById('sentenceListCloseBtn');
-
 const audio = new Audio();
 let currentFilteredSentences = [];
 let currentIndex = 0;
 let currentFilteredWords = [];
 let currentWordIndex = 0;
 let wordTranslationMap = new Map();
-
-// State variables for sentence page
 let currentStatusFilter = 'unmastered';
 let currentSortOrder = 'sequential';
 let isSingleSentenceMode = false;
-
-// State variables for vocabulary page
 let currentWordStatusFilter = 'all';
 let currentWordSortOrder = 'frequency';
 
-
-// === 3. Core Functions ===
-
+// === 3. 核心功能函数 ===
 function showCustomConfirm(message, showButtons = true) {
     return new Promise((resolve) => {
         if (!confirmModal) return resolve(false);
@@ -93,7 +84,6 @@ function showCustomConfirm(message, showButtons = true) {
         confirmModal.style.display = 'flex';
         confirmBtn.style.display = showButtons ? 'inline-block' : 'none';
         cancelBtn.style.display = showButtons ? 'inline-block' : 'none';
-
         const onConfirm = () => {
             confirmModal.style.display = 'none';
             confirmBtn.removeEventListener('click', onConfirm);
@@ -110,28 +100,23 @@ function showCustomConfirm(message, showButtons = true) {
         cancelBtn.addEventListener('click', onCancel);
     });
 }
-
 async function readTextWithSupabase(text, isSlow = false, button) {
-    const TTS_URL = `https://rvarfascuwvponxwdeoe.supabase.co/functions/v1/tts`;
+    const TTS_URL = 'https://rvarfascuwvponxwdeoe.supabase.co/functions/v1/tts';
     const request = { text: text, isSlow: isSlow };
-
     document.querySelectorAll('.icon-btn, .highlight-word').forEach(btn => btn.classList.remove('playing'));
     if (button) button.classList.add('playing');
-
     return new Promise((resolve, reject) => {
         const handleEnd = () => {
             audio.removeEventListener('ended', handleEnd);
             if (button) button.classList.remove('playing');
             resolve();
         };
-
         audio.addEventListener('ended', handleEnd);
         audio.addEventListener('error', (e) => {
             console.error('Audio playback error:', e);
             if (button) button.classList.remove('playing');
             reject(e);
         });
-
         fetch(TTS_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -149,7 +134,6 @@ async function readTextWithSupabase(text, isSlow = false, button) {
         });
     });
 }
-
 async function readWordByWord(sentence) {
     const words = sentence.split(/\s+/).filter(word => word.length > 0);
     if (indexWordReadBtn) indexWordReadBtn.classList.add('playing');
@@ -162,14 +146,12 @@ async function readWordByWord(sentence) {
         if (indexWordReadBtn) indexWordReadBtn.classList.remove('playing');
     }
 }
-
 function showAiExplanation(title, content) {
     if (!aiExplanationModal) return;
     aiExplanationTitle.innerText = title;
     aiExplanationContent.innerHTML = content;
     aiExplanationModal.style.display = 'flex';
 }
-
 if (aiExplanationCloseBtn) {
     aiExplanationCloseBtn.addEventListener('click', () => {
         if (aiExplanationModal) aiExplanationModal.style.display = 'none';
@@ -180,20 +162,16 @@ if(sentenceListCloseBtn) {
         if(sentenceListModal) sentenceListModal.style.display = 'none';
     });
 }
-
 async function getAiExplanation() {
     if (currentFilteredSentences.length === 0) return;
     const currentSentence = currentFilteredSentences[currentIndex];
     const spanishSentence = currentSentence.spanish_text;
-
     if (currentSentence.ai_notes) {
         showAiExplanation('AI 句子解释', `<p>${currentSentence.ai_notes.replace(/\n/g, '<br>')}</p>`);
         return;
     }
-
-    const EXPLAIN_URL = `https://rvarfascuwvponxwdeoe.supabase.co/functions/v1/explain-sentence`;
+    const EXPLAIN_URL = 'https://rvarfascuwvponxwdeoe.supabase.co/functions/v1/explain-sentence';
     showAiExplanation('AI 正在生成解释', `<div class="loading-spinner"></div><p style="text-align: center;">AI 正在生成解释中，请稍候...</p>`);
-
     try {
         const payload = { sentence: spanishSentence, getExplanation: true };
         const response = await fetch(EXPLAIN_URL, {
@@ -201,31 +179,24 @@ async function getAiExplanation() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-
         if (!response.ok) throw new Error(await response.text());
-        
         const result = await response.json();
         const explanation = result.explanation || '未能获取 AI 解释。';
-
         const { error: updateError } = await _supabase
             .from('sentences')
             .update({ ai_notes: explanation })
             .eq('id', currentSentence.id);
-
         if (updateError) {
             console.error('Failed to save AI notes:', updateError);
         } else {
             currentSentence.ai_notes = explanation;
         }
-
         showAiExplanation('AI 句子解释', `<p>${explanation.replace(/\n/g, '<br>')}</p>`);
     } catch (error) {
         console.error('Failed to fetch from Supabase Explain API:', error);
         showAiExplanation('错误', `<p>无法连接到 AI 服务。错误详情: ${error.message}</p>`);
     }
 }
-
-
 const stopWords = new Set([
     'a', 'al', 'ante', 'bajo', 'con', 'contra', 'de', 'del', 'desde', 'durante', 'en', 'entre',
     'hacia', 'hasta', 'mediante', 'para', 'por', 'según', 'sin', 'so', 'sobre', 'tras',
@@ -234,23 +205,27 @@ const stopWords = new Set([
     'no', 'mi', 'tu', 'su', 'mí', 'te', 'se', 'me', 'nos', 'os', 'lo', 'los', 'la', 'las', 'le', 'les',
     'que', 'quien', 'cuyo', 'donde', 'como', 'cuando', 'cual'
 ]);
-
 function getWordsFromSentence(sentence) {
     const punctuationRegex = /[.,;!?()"\-—:¿¡]/g;
     return sentence.toLowerCase().replace(punctuationRegex, '').split(/\s+/).filter(word => word.length > 1 && !stopWords.has(word));
 }
-
-async function generateAndUpdateHighFrequencyWords() {
-    console.log('开始重新生成和更新词汇表...');
-
-    const { data: allSentencesData, error: fetchAllError } = await _supabase.from('sentences').select('spanish_text');
-    if (fetchAllError) return console.error('获取所有句子失败:', fetchAllError);
-
-    const { data: existingWordsInDb, error: fetchWordsError } = await _supabase.from('high_frequency_words').select('spanish_word, chinese_translation');
-    if (fetchWordsError) return console.error('获取现有词汇失败:', fetchWordsError);
-    
+async function generateAndUpdateHighFrequencyWords(user) {
+    if (!user) {
+        console.error("generateAndUpdateHighFrequencyWords: User object is missing.");
+        return;
+    }
+    console.log(`为用户 ${user.id} 开始生成高频词...`);
+    const { data: allSentencesData, error: fetchAllError } = await _supabase
+        .from('sentences')
+        .select('spanish_text')
+        .eq('user_id', user.id);
+    if (fetchAllError) return console.error('获取用户句子失败:', fetchAllError);
+    const { data: existingWordsInDb, error: fetchWordsError } = await _supabase
+        .from('high_frequency_words')
+        .select('spanish_word, chinese_translation')
+        .eq('user_id', user.id);
+    if (fetchWordsError) return console.error('获取用户现有词汇失败:', fetchWordsError);
     const existingWordMap = new Map((existingWordsInDb || []).map(w => [w.spanish_word, w.chinese_translation]));
-    
     const wordCounts = {};
     const wordSourceSentences = {};
     (allSentencesData || []).flatMap(s => getWordsFromSentence(s.spanish_text)).forEach(word => {
@@ -259,53 +234,23 @@ async function generateAndUpdateHighFrequencyWords() {
             wordSourceSentences[word] = allSentencesData.find(s => s.spanish_text.toLowerCase().includes(word))?.spanish_text || '';
         }
     });
-
-    const newWordSet = new Set(Object.keys(wordCounts));
-    const wordsToDelete = (existingWordsInDb || []).map(w => w.spanish_word).filter(word => !newWordSet.has(word));
-    if (wordsToDelete.length > 0) {
-        const { error: deleteError } = await _supabase.from('high_frequency_words').delete().in('spanish_word', wordsToDelete);
-        if (deleteError) console.error('删除旧词汇失败:', deleteError);
-        else console.log(`成功删除了 ${wordsToDelete.length} 个不再使用的词汇。`);
-    }
-
     const wordsToUpsert = Object.keys(wordCounts).map(word => ({
+        user_id: user.id,
         spanish_word: word,
         frequency: wordCounts[word],
         source_sentence: wordSourceSentences[word],
         chinese_translation: existingWordMap.get(word) || ''
     }));
-
-    const newWordsToTranslate = wordsToUpsert.filter(w => !w.chinese_translation);
-    if (newWordsToTranslate.length > 0) {
-        console.log(`正在为 ${newWordsToTranslate.length} 个新词汇获取翻译...`);
-        const translatedPromises = newWordsToTranslate.map(word =>
-            fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=es&tl=zh-CN&dt=t&q=${encodeURIComponent(word.spanish_word)}`)
-                .then(res => res.json())
-                .then(data => {
-                    const translation = data[0][0][0];
-                    const existing = wordsToUpsert.find(w => w.spanish_word === word.spanish_word);
-                    if (existing) existing.chinese_translation = translation;
-                })
-                .catch(error => console.error(`翻译失败: "${word.spanish_word}"`, error))
-        );
-        await Promise.all(translatedPromises);
-    }
-    
     if (wordsToUpsert.length > 0) {
-        const { error: upsertError } = await _supabase.from('high_frequency_words').upsert(wordsToUpsert, { onConflict: 'spanish_word' });
+        const { error: upsertError } = await _supabase
+            .from('high_frequency_words')
+            .upsert(wordsToUpsert, { onConflict: 'user_id, spanish_word' });
         if (upsertError) console.error('Supabase 词汇更新错误:', upsertError);
-        else console.log('高频词汇表更新成功。');
+        else console.log(`成功为用户 ${user.id} 更新/插入 ${wordsToUpsert.length} 个高频词。`);
     }
 }
-
-
-// === Index Page Functions ===
-
 function filterAndSortSentences(isNewFilterOrSort = true) {
-    // --- DEBUG STEP C ---
-    console.log("【步骤C】filterAndSortSentences 开始执行，当前筛选/排序:", { filter: currentStatusFilter, sort: currentSortOrder });
     let filtered = allSentences;
-    
     if (currentSortOrder === 'single') {
         isSingleSentenceMode = true;
         const singleSentence = currentFilteredSentences[currentIndex] || allSentences[0];
@@ -315,55 +260,38 @@ function filterAndSortSentences(isNewFilterOrSort = true) {
         renderSentenceCard();
         return;
     }
-    
     isSingleSentenceMode = false;
     if(sentenceCard) sentenceCard.classList.remove('is-locked');
-
     if (currentStatusFilter === 'unmastered') {
         filtered = allSentences.filter(s => !s.mastered);
     } else if (currentStatusFilter === 'mastered') {
         filtered = allSentences.filter(s => s.mastered);
     }
-    
-    // --- DEBUG STEP D ---
-    console.log("【步骤D】筛选后的列表 (filtered):", filtered);
-
     if (currentSortOrder === 'random') {
         filtered = filtered.sort(() => Math.random() - 0.5);
     }
-
     currentFilteredSentences = filtered;
     if (isNewFilterOrSort) {
         currentIndex = 0;
     }
     renderSentenceCard();
 }
-
 function renderSentenceCard() {
-    // --- DEBUG STEP E ---
-    console.log("【步骤E】renderSentenceCard 开始执行，准备渲染的列表:", currentFilteredSentences);
-
     if (!sentenceCardContainer || !indexSpanishText || !indexChineseText) return;
-
     if (currentFilteredSentences.length === 0) {
-        // --- DEBUG STEP F ---
-        console.log("【步骤F】检测到列表为空，准备显示'没有内容'。");
         sentenceCardContainer.style.display = 'none';
         emptyMessage.style.display = 'block';
         if (currentStatusFilter === 'mastered') emptyMessage.innerText = '您还没有掌握任何句子！';
         else if (currentStatusFilter === 'unmastered' && allSentences.length > 0) emptyMessage.innerText = '恭喜！所有句子都已掌握。';
-        else emptyMessage.innerText = '当前没有句子，请点击下方“新增”添加。';
+        else emptyMessage.innerText = '您的句子列表为空，请在“管理”页面添加新句子。';
         return;
     }
     sentenceCardContainer.style.display = 'flex';
     emptyMessage.style.display = 'none';
-
     const currentSentence = currentFilteredSentences[currentIndex];
-    
     const sentenceText = currentSentence.spanish_text;
     const tokens = sentenceText.split(/([,;!?."\s¿¡—:-])/);
     const punctuationRegex = /[.,;!?()"\-—:¿¡]/g;
-
     const htmlParts = tokens.map(token => {
         const cleanToken = token.toLowerCase().replace(punctuationRegex, '').trim();
         if (wordTranslationMap.has(cleanToken)) {
@@ -372,22 +300,23 @@ function renderSentenceCard() {
         }
         return token;
     });
-
     indexSpanishText.innerHTML = htmlParts.join('');
     indexChineseText.innerText = currentSentence.chinese_translation;
-
     if (masteredToggle) {
         masteredToggle.classList.toggle('mastered', currentSentence.mastered);
     }
-
     if (indexReadBtn) indexReadBtn.onclick = () => readTextWithSupabase(currentSentence.spanish_text, false, indexReadBtn);
     if (indexSlowReadBtn) indexSlowReadBtn.onclick = () => readTextWithSupabase(currentSentence.spanish_text, true, indexSlowReadBtn);
     if (indexWordReadBtn) indexWordReadBtn.onclick = () => readWordByWord(currentSentence.spanish_text);
     if (indexAiExplainBtn) indexAiExplainBtn.onclick = () => getAiExplanation();
 }
-
 async function fetchAndMapWords() {
-    const { data, error } = await _supabase.from('high_frequency_words').select('spanish_word, chinese_translation');
+    const { data: { user } } = await _supabase.auth.getUser();
+    if (!user) return;
+    const { data, error } = await _supabase
+        .from('high_frequency_words')
+        .select('spanish_word, chinese_translation')
+        .eq('user_id', user.id);
     if (error) {
         console.error('Failed to fetch words for map:', error);
         throw error;
@@ -395,60 +324,40 @@ async function fetchAndMapWords() {
     wordTranslationMap.clear();
     (data || []).forEach(word => wordTranslationMap.set(word.spanish_word, word.chinese_translation));
 }
-
 async function fetchAllSentences() {
-    // --- DEBUG STEP A ---
-    console.log("【步骤A】fetchAllSentences 开始执行...");
-    if (!isIndexPage && !isManagePage && !isVocabularyPage) return; 
-    
+    if (!isIndexPage && !isManagePage && !isVocabularyPage) return;
     if(isIndexPage){
         sentenceCardContainer.style.display = 'none';
         emptyMessage.innerText = '加载中...';
         emptyMessage.style.display = 'block';
     }
-
     const { data, error } = await _supabase.from('sentences').select('*').order('id', { ascending: true });
-    
-    // --- DEBUG STEP B ---
-    console.log("【步骤B】从 Supabase 成功获取 'sentences' 数据:", data);
-
     if (error) {
-        console.error('Failed to fetch sentences:', error);
-        throw error;
+        console.error('获取句子失败:', error);
+        if (emptyMessage) emptyMessage.innerText = `加载句子失败: ${error.message}`;
+        allSentences = [];
+    } else {
+        allSentences = data || [];
     }
-    allSentences = data || [];
-    
-    if (isIndexPage) {
-        let isJump = false;
-        const targetSentenceId = sessionStorage.getItem('targetSentenceId');
-        if (targetSentenceId) {
-            const targetIndex = allSentences.findIndex(s => s.id == targetSentenceId);
-            if (targetIndex !== -1) {
-                currentIndex = targetIndex;
-                isJump = true;
-            }
-            sessionStorage.removeItem('targetSentenceId');
-        }
-        filterAndSortSentences(!isJump);
-    }
-
     if (isManagePage) {
         renderManageSentences(allSentences);
     }
 }
-
 async function toggleMastered(id, newStatus) {
     const { error } = await _supabase.from('sentences').update({ mastered: newStatus }).eq('id', id);
-    if (error) return console.error('Failed to update status:', error);
+    if (error) return console.error('更新状态失败:', error);
     const sentenceToUpdate = allSentences.find(s => s.id === id);
     if (sentenceToUpdate) sentenceToUpdate.mastered = newStatus;
     if (masteredToggle) masteredToggle.classList.toggle('mastered', newStatus);
 }
-
 async function deleteCurrentSentence() {
     if (currentFilteredSentences.length === 0) return;
     const sentenceToDelete = currentFilteredSentences[currentIndex];
-
+    const { data: { user } } = await _supabase.auth.getUser();
+    if (!user) {
+        showCustomConfirm('错误: 无法获取用户信息，请重新登录。');
+        return;
+    }
     const confirmation = await showCustomConfirm(`确定要删除这个句子吗？\n"${sentenceToDelete.spanish_text}"`);
     if (confirmation) {
         const { error } = await _supabase.from('sentences').delete().eq('id', sentenceToDelete.id);
@@ -457,24 +366,29 @@ async function deleteCurrentSentence() {
         } else {
             showCustomConfirm('删除成功！', false);
             setTimeout(() => confirmModal.style.display = 'none', 1000);
-            await Promise.all([fetchAllSentences(), generateAndUpdateHighFrequencyWords()]);
+            await Promise.all([fetchAllSentences(), generateAndUpdateHighFrequencyWords(user)]);
         }
     }
 }
-
 async function handleAddSentence(event) {
     event.preventDefault();
     const spanishText = document.getElementById('new-spanish-text').value.trim();
     const chineseText = document.getElementById('new-chinese-text').value.trim();
-
     if (!spanishText || !chineseText) {
         showCustomConfirm('西班牙语和中文翻译均不能为空！');
         return;
     }
-    
-    const newSentence = { spanish_text: spanishText, chinese_translation: chineseText };
+    const { data: { user } } = await _supabase.auth.getUser();
+    if (!user) {
+        showCustomConfirm('错误: 无法获取用户信息，请重新登录。');
+        return;
+    }
+    const newSentence = {
+        spanish_text: spanishText,
+        chinese_translation: chineseText,
+        user_id: user.id
+    };
     const { error } = await _supabase.from('sentences').insert([newSentence]);
-
     if (error) {
         showCustomConfirm(`添加失败: ${error.message}`);
     } else {
@@ -482,10 +396,9 @@ async function handleAddSentence(event) {
         addSentenceForm.reset();
         showCustomConfirm('添加成功！', false);
         setTimeout(() => confirmModal.style.display = 'none', 1000);
-        await Promise.all([fetchAllSentences(), generateAndUpdateHighFrequencyWords()]);
+        await Promise.all([fetchAllSentences(), generateAndUpdateHighFrequencyWords(user)]);
     }
 }
-
 function openEditModal() {
     if (currentFilteredSentences.length === 0) return;
     const sentenceToEdit = currentFilteredSentences[currentIndex];
@@ -494,38 +407,36 @@ function openEditModal() {
     document.getElementById('edit-chinese-text').value = sentenceToEdit.chinese_translation;
     editSentenceModal.style.display = 'flex';
 }
-
 async function handleEditSentence(event) {
     event.preventDefault();
     const id = document.getElementById('edit-sentence-id').value;
     const spanishText = document.getElementById('edit-spanish-text').value.trim();
     const chineseText = document.getElementById('edit-chinese-text').value.trim();
-
     if (!spanishText || !chineseText) {
         showCustomConfirm('西班牙语和中文翻译均不能为空！');
         return;
     }
-    
     const originalSentence = allSentences.find(s => s.id == id);
     let updateData = { spanish_text: spanishText, chinese_translation: chineseText };
     if (originalSentence && originalSentence.spanish_text !== spanishText) {
         updateData.ai_notes = null;
     }
-
     const { error } = await _supabase.from('sentences').update(updateData).eq('id', id);
-
     if (error) {
         showCustomConfirm(`更新失败: ${error.message}`);
     } else {
         editSentenceModal.style.display = 'none';
         editSentenceForm.reset();
         showCustomConfirm('更新成功！', false);
-        setTimeout(() => confirmModal.style.display = 'none', 1000);
-        await Promise.all([fetchAllSentences(), generateAndUpdateHighFrequencyWords()]);
+        setTimeout(async () => {
+            confirmModal.style.display = 'none';
+            const { data: { user } } = await _supabase.auth.getUser();
+            if(user){
+                await Promise.all([fetchAllSentences(), generateAndUpdateHighFrequencyWords(user)]);
+            }
+        }, 1000);
     }
 }
-
-// === Vocabulary Page Functions ===
 async function fetchHighFrequencyWords() {
     if (!wordCardContainer) return;
     wordCardContainer.style.display = 'none';
@@ -533,18 +444,15 @@ async function fetchHighFrequencyWords() {
         emptyVocabularyMessage.style.display = 'block';
         emptyVocabularyMessage.innerText = '加载中...';
     }
-
     const { data, error } = await _supabase.from('high_frequency_words').select('*');
-
     if (error) {
-        console.error('Failed to fetch high frequency words:', error);
+        console.error('获取高频词汇失败:', error);
         if (emptyVocabularyMessage) emptyVocabularyMessage.innerText = `加载失败. Error: ${error.message}`;
         return;
     }
     allWords = data || [];
     filterAndSortWords();
 }
-
 function filterAndSortWords() {
     let filtered = allWords;
     if (currentWordStatusFilter === 'unmastered') {
@@ -552,21 +460,17 @@ function filterAndSortWords() {
     } else if (currentWordStatusFilter === 'mastered') {
         filtered = allWords.filter(w => w.mastered);
     }
-
     if (currentWordSortOrder === 'random') {
-        filtered.sort(() => Math.random() - 0.5);
+        filtered = filtered.sort(() => Math.random() - 0.5);
     } else {
-        filtered.sort((a, b) => b.frequency - a.frequency);
+        filtered = filtered.sort((a, b) => b.frequency - a.frequency);
     }
-
     currentFilteredWords = filtered;
     currentWordIndex = 0;
     renderWordCard();
 }
-
 function renderWordCard() {
     if (!wordCardContainer || !spanishWordText || !chineseTranslation || !wordSourceSentence) return;
-
     if (currentFilteredWords.length === 0) {
         wordCardContainer.style.display = 'none';
         if (emptyVocabularyMessage) {
@@ -579,12 +483,10 @@ function renderWordCard() {
     }
     wordCardContainer.style.display = 'flex';
     if (emptyVocabularyMessage) emptyVocabularyMessage.style.display = 'none';
-
     const currentWord = currentFilteredWords[currentWordIndex];
     spanishWordText.innerText = currentWord.spanish_word;
     chineseTranslation.innerText = currentWord.chinese_translation;
     wordSourceSentence.innerText = currentWord.source_sentence;
-
     if (wordFrequencyBadge) {
         wordFrequencyBadge.innerText = currentWord.frequency;
         wordFrequencyBadge.onclick = (e) => {
@@ -592,25 +494,23 @@ function renderWordCard() {
             showSentencesForWord(currentWord.spanish_word);
         };
     }
-
     if (wordReadBtn) wordReadBtn.onclick = () => readTextWithSupabase(currentWord.spanish_word, false, wordReadBtn);
     if (wordSlowReadBtn) wordSlowReadBtn.onclick = () => readTextWithSupabase(currentWord.spanish_word, true, wordSlowReadBtn);
-    
     if (wordMasteredToggle) {
         wordMasteredToggle.classList.toggle('mastered', currentWord.mastered);
+        wordMasteredToggle.onclick = (e) => {
+            e.stopPropagation();
+            toggleWordMastered(currentWord.id, !currentWord.mastered);
+        };
     }
 }
-
 function showSentencesForWord(word) {
     if (!sentenceListModal || !sentenceListContent || !sentenceListTitle) return;
-
     const matchingSentences = allSentences.filter(sentence =>
         new RegExp(`\\b${word}\\b`, 'i').test(sentence.spanish_text)
     );
-
     sentenceListTitle.innerText = `包含 “${word}” 的例句 (${matchingSentences.length})`;
     sentenceListContent.innerHTML = '';
-
     if (matchingSentences.length > 0) {
         matchingSentences.forEach(sentence => {
             const item = document.createElement('p');
@@ -624,28 +524,24 @@ function showSentencesForWord(word) {
     } else {
         sentenceListContent.innerHTML = '<p>暂无更多例句。</p>';
     }
-
     sentenceListModal.style.display = 'flex';
 }
-
-async function toggleWordMastered(word, newStatus) {
-    const { error } = await _supabase.from('high_frequency_words').update({ mastered: newStatus }).eq('spanish_word', word);
+async function toggleWordMastered(id, newStatus) {
+    const { error } = await _supabase.from('high_frequency_words').update({ mastered: newStatus }).eq('id', id);
     if (error) {
-        console.error('Failed to update word status:', error);
+        console.error('更新单词状态失败:', error);
         showCustomConfirm('更新掌握状态失败。');
     } else {
-        const wordToUpdate = allWords.find(w => w.spanish_word === word);
+        const wordToUpdate = allWords.find(w => w.id === id);
         if (wordToUpdate) wordToUpdate.mastered = newStatus;
-        if (wordMasteredToggle) wordMasteredToggle.classList.toggle('mastered', newStatus);
+        renderWordCard();
     }
 }
-
-// === Manage Page Functions ===
 function renderManageSentences(sentencesToRender) {
     if (!sentenceList) return;
     sentenceList.innerHTML = '';
     if ((sentencesToRender || []).length === 0) {
-        sentenceList.innerHTML = `<p class="empty-list-message">没有句子。</p>`;
+        sentenceList.innerHTML = `<p class="empty-list-message">您的句子列表为空，请在下方添加。</p>`;
         return;
     }
     (sentencesToRender || []).forEach(sentence => {
@@ -667,48 +563,47 @@ function renderManageSentences(sentencesToRender) {
 }
 async function addSentences() {
     if (addBatchBtn.classList.contains('loading')) return;
-
+    const { data: { user } } = await _supabase.auth.getUser();
+    if (!user) {
+        showCustomConfirm('错误: 无法获取用户信息，请重新登录。');
+        return;
+    }
     const lines = batchInput.value.trim().split('\n').filter(line => line.trim().length > 0);
     if (lines.length === 0) return showCustomConfirm('输入内容不能为空！');
-    
     addBatchBtn.classList.add('loading');
     addBatchBtn.disabled = true;
-
     try {
         const { data: existing, error: fetchError } = await _supabase.from('sentences').select('spanish_text');
         if (fetchError) throw fetchError;
-        
         const existingSet = new Set(existing.map(s => s.spanish_text));
         const toAdd = lines.map(line => ({ spanish_text: line.trim() })).filter(s => !existingSet.has(s.spanish_text));
         const duplicateCount = lines.length - toAdd.length;
-
         if (toAdd.length === 0) {
             showCustomConfirm(`没有新的句子可添加。发现 ${duplicateCount} 个重复句子。`);
-            return; // Finally block will still run
+            addBatchBtn.classList.remove('loading');
+            addBatchBtn.disabled = false;
+            return;
         }
-
-        const EXPLAIN_URL = `https://rvarfascuwvponxwdeoe.supabase.co/functions/v1/explain-sentence`;
+        const EXPLAIN_URL = 'https://rvarfascuwvponxwdeoe.supabase.co/functions/v1/explain-sentence';
         const payload = { sentences: toAdd, getTranslation: true };
         const response = await fetch(EXPLAIN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-
         if (!response.ok) {
             throw new Error(`翻译服务出错: ${await response.text()}`);
         }
-
         const { translatedSentences } = await response.json();
-        const { error: insertError } = await _supabase.from('sentences').insert(translatedSentences);
-
+        const sentencesWithUserId = translatedSentences.map(sentence => ({
+            ...sentence,
+            user_id: user.id
+        }));
+        const { error: insertError } = await _supabase.from('sentences').insert(sentencesWithUserId);
         if (insertError) throw insertError;
-
         batchInput.value = '';
-        let message = `成功添加 ${translatedSentences.length} 个句子。`;
+        let message = `成功添加 ${sentencesWithUserId.length} 个句子。`;
         if (duplicateCount > 0) message += ` 忽略了 ${duplicateCount} 个重复句子。`;
-        
         showCustomConfirm(message).then(() => {
             fetchAllSentences();
-            generateAndUpdateHighFrequencyWords();
+            generateAndUpdateHighFrequencyWords(user);
         });
-
     } catch (error) {
         console.error('批量添加失败:', error);
         showCustomConfirm(`批量添加失败: ${error.message}`);
@@ -726,15 +621,61 @@ function liveSearch() {
     renderManageSentences(filtered);
 }
 
-
-// === Event listeners and initialization ===
+// === 事件监听器与初始化 ===
 window.addEventListener('load', () => {
+
+    const logoutButton = document.getElementById('logout-button');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (typeof handleSignOut === 'function') {
+                handleSignOut();
+            }
+        });
+    }
+
     if (isIndexPage) {
         const initialLoad = async () => {
+            const { data: { user } } = await _supabase.auth.getUser();
+            let lastSentenceId = null;
+            if (user) {
+                // **【断点续学】修正：移除 .single()，使用更安全的数组检查**
+                const { data: profile, error } = await _supabase
+                    .from('profiles')
+                    .select('last_sentence_id')
+                    .eq('id', user.id);
+                if (error) {
+                    console.error("获取用户 profile 失败:", error);
+                } else if (profile && profile.length > 0) {
+                    lastSentenceId = profile[0].last_sentence_id;
+                }
+            }
+
             await Promise.all([fetchAllSentences(), fetchAndMapWords()]);
+
+            let isJump = false;
+            const targetSentenceId = sessionStorage.getItem('targetSentenceId');
+            if (targetSentenceId) {
+                const targetIndex = allSentences.findIndex(s => s.id == targetSentenceId);
+                if (targetIndex !== -1) {
+                    currentIndex = targetIndex;
+                    isJump = true;
+                }
+                sessionStorage.removeItem('targetSentenceId');
+            } else if (lastSentenceId) {
+                const targetIndex = allSentences.findIndex(s => s.id == lastSentenceId);
+                if (targetIndex !== -1) {
+                    currentIndex = targetIndex;
+                    isJump = true;
+                    console.log(`已恢复学习进度至句子ID: ${lastSentenceId}`);
+                }
+            }
+
+            filterAndSortSentences(!isJump);
+
             const unmasteredSentences = allSentences.filter(s => !s.mastered);
             if (currentStatusFilter === 'unmastered' && unmasteredSentences.length === 0 && allSentences.length > 0) {
-                console.log("No unmastered sentences found, switching to 'all' view.");
+                console.log("没有未掌握的句子，切换到“所有”视图。");
                 currentStatusFilter = 'all';
                 if (statusFilterGroup) {
                     statusFilterGroup.querySelector('[data-value="unmastered"]').classList.remove('active');
@@ -745,13 +686,13 @@ window.addEventListener('load', () => {
         };
 
         initialLoad().catch(error => {
-            console.error("An error occurred during initial data loading:", error);
+            console.error("初始化数据加载时发生错误:", error);
             if (emptyMessage) {
-                emptyMessage.innerText = `加载数据时发生严重错误，请按F12打开控制台查看详情。\n错误: ${error.message}`;
+                emptyMessage.innerText = `加载数据时发生严重错误...\n错误: ${error.message}`;
                 emptyMessage.style.color = 'var(--danger-color)';
             }
         });
-        
+
         if (statusFilterGroup) {
             statusFilterGroup.addEventListener('click', (e) => {
                 if (e.target.tagName === 'BUTTON') {
@@ -775,7 +716,7 @@ window.addEventListener('load', () => {
         }
 
         if (sentenceCard) {
-            sentenceCard.addEventListener('click', (event) => {
+            sentenceCard.addEventListener('click', async (event) => {
                 if (isSingleSentenceMode || event.target.closest('button') || event.target.classList.contains('highlight-word') || event.target.closest('.card-footer')) {
                     return;
                 }
@@ -783,22 +724,25 @@ window.addEventListener('load', () => {
                 const midpoint = rect.left + rect.width / 2;
                 if (event.clientX < midpoint) {
                     currentIndex = (currentIndex > 0) ? currentIndex - 1 : currentFilteredSentences.length - 1;
-                    renderSentenceCard();
-                    const currentSentence = currentFilteredSentences[currentIndex];
-                    if (currentSentence) {
-                        readTextWithSupabase(currentSentence.spanish_text, false, indexReadBtn);
-                    }
                 } else {
                     currentIndex = (currentIndex < currentFilteredSentences.length - 1) ? currentIndex + 1 : 0;
-                    renderSentenceCard();
-                    const currentSentence = currentFilteredSentences[currentIndex];
-                    if (currentSentence) {
-                        readTextWithSupabase(currentSentence.spanish_text, false, indexReadBtn);
+                }
+                renderSentenceCard();
+
+                const currentSentence = currentFilteredSentences[currentIndex];
+                if (currentSentence) {
+                    const { data: { user } } = await _supabase.auth.getUser();
+                    if (user) {
+                        await _supabase
+                            .from('profiles')
+                            .update({ last_sentence_id: currentSentence.id, updated_at: new Date() })
+                            .eq('id', user.id);
                     }
+                    readTextWithSupabase(currentSentence.spanish_text, false, null);
                 }
             });
         }
-        
+
         if (indexSpanishText) {
             indexSpanishText.addEventListener('click', (event) => {
                 if (event.target.classList.contains('highlight-word')) {
@@ -808,7 +752,7 @@ window.addEventListener('load', () => {
                 }
             });
         }
-        
+
         if (masteredToggle) {
             masteredToggle.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -821,10 +765,8 @@ window.addEventListener('load', () => {
         if (addSentenceLink) addSentenceLink.addEventListener('click', (e) => { e.stopPropagation(); addSentenceModal.style.display = 'flex'; });
         if (editSentenceLink) editSentenceLink.addEventListener('click', (e) => { e.stopPropagation(); openEditModal(); });
         if (deleteSentenceLink) deleteSentenceLink.addEventListener('click', (e) => { e.stopPropagation(); deleteCurrentSentence(); });
-        
         if (addSentenceForm) addSentenceForm.addEventListener('submit', handleAddSentence);
         if (editSentenceForm) editSentenceForm.addEventListener('submit', handleEditSentence);
-
         if (cancelAddBtn) cancelAddBtn.addEventListener('click', () => addSentenceModal.style.display = 'none');
         if (cancelEditBtn) cancelEditBtn.addEventListener('click', () => editSentenceModal.style.display = 'none');
 
@@ -834,14 +776,43 @@ window.addEventListener('load', () => {
         if (sentenceSearch) sentenceSearch.addEventListener('input', liveSearch);
 
     } else if (isVocabularyPage) {
-        Promise.all([fetchHighFrequencyWords(), fetchAllSentences()])
-             .catch(error => {
-                console.error("An error occurred during vocabulary data loading:", error);
-                if (emptyVocabularyMessage) {
-                    emptyVocabularyMessage.innerText = `加载数据时发生严重错误，请按F12打开控制台查看详情。\n错误: ${error.message}`;
-                    emptyVocabularyMessage.style.color = 'var(--danger-color)';
+        const initialVocabLoad = async () => {
+            const { data: { user } } = await _supabase.auth.getUser();
+            let lastWordId = null;
+            if(user){
+                // **【单词断点续学】修正：移除 .single()，使用更安全的数组检查**
+                const { data: profile, error } = await _supabase
+                    .from('profiles')
+                    .select('last_word_id')
+                    .eq('id', user.id);
+                if (error) {
+                    console.error("获取用户 profile 失败:", error);
+                } else if (profile && profile.length > 0) {
+                    lastWordId = profile[0].last_word_id;
                 }
-            });
+            }
+
+            await Promise.all([fetchHighFrequencyWords(), fetchAllSentences()]);
+            
+            filterAndSortWords();
+
+             if (lastWordId) {
+                const targetIndex = currentFilteredWords.findIndex(w => w.id === lastWordId);
+                 if (targetIndex !== -1) {
+                    currentWordIndex = targetIndex;
+                    renderWordCard();
+                    console.log(`已恢复单词学习进度至: ${currentFilteredWords[currentWordIndex].spanish_word}`);
+                }
+             }
+        };
+
+        initialVocabLoad().catch(error => {
+            console.error("词汇页数据加载时发生错误:", error);
+            if (emptyVocabularyMessage) {
+                emptyVocabularyMessage.innerText = `加载数据时发生严重错误...\n错误: ${error.message}`;
+                emptyVocabularyMessage.style.color = 'var(--danger-color)';
+            }
+        });
 
         if (wordStatusFilterGroup) {
             wordStatusFilterGroup.addEventListener('click', (e) => {
@@ -866,7 +837,7 @@ window.addEventListener('load', () => {
         }
 
         if (wordCard) {
-            wordCard.addEventListener('click', (event) => {
+            wordCard.addEventListener('click', async (event) => {
                 if (event.target.closest('button') || event.target.closest('.card-footer') || event.target.id === 'word-frequency-badge') {
                     return;
                 }
@@ -878,8 +849,16 @@ window.addEventListener('load', () => {
                     currentWordIndex = (currentWordIndex < currentFilteredWords.length - 1) ? currentWordIndex + 1 : 0;
                 }
                 renderWordCard();
+
                 const currentWord = currentFilteredWords[currentWordIndex];
                 if (currentWord) {
+                    const { data: { user } } = await _supabase.auth.getUser();
+                    if(user){
+                         await _supabase
+                            .from('profiles')
+                            .update({ last_word_id: currentWord.id, updated_at: new Date() })
+                            .eq('id', user.id);
+                    }
                     readTextWithSupabase(currentWord.spanish_word, false, wordReadBtn);
                 }
             });
@@ -890,7 +869,7 @@ window.addEventListener('load', () => {
                 e.stopPropagation();
                 if (currentFilteredWords.length > 0) {
                     const currentWord = currentFilteredWords[currentWordIndex];
-                    toggleWordMastered(currentWord.spanish_word, !currentWord.mastered);
+                    toggleWordMastered(currentWord.id, !currentWord.mastered);
                 }
             });
         }
