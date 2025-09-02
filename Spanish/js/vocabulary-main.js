@@ -82,14 +82,13 @@ async function toggleWordMastered() {
     const currentWord = currentFilteredWords[currentWordIndex];
     const newStatus = !currentWord.mastered;
 
-    // === 核心改动 (修复 RLS 问题) ===
-    // 更新时，同时匹配词汇的 id 和 当前用户的 user_id
+    // === 核心改动：加上了 .eq('user_id', currentUser.id) ===
     const { error } = await supabase
         .from('high_frequency_words')
         .update({ mastered: newStatus })
         .eq('id', currentWord.id)
-        .eq('user_id', currentUser.id); // <--- 新增的用户验证
-    // ===================================
+        .eq('user_id', currentUser.id); // <--- 补上这个缺失的关键验证
+    // =======================================================
 
     if (error) {
         console.error('更新单词状态失败:', error);
