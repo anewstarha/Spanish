@@ -1,8 +1,8 @@
 // js/manage-main.js
 
 import { supabase } from './config.js';
-import { protectPage, initializeLogoutButton } from './auth.js';
-import { showCustomConfirm, generateAndUpdateHighFrequencyWords } from './utils.js';
+import { protectPage, initializeHeader } from './auth.js';
+import { showCustomConfirm, generateAndUpdateHighFrequencyWords, initializeDrawerNav } from './utils.js';
 
 let currentUser = null;
 let allSentences = [];
@@ -70,7 +70,6 @@ async function addSentencesInBatch() {
 
         if (toAdd.length === 0) {
             await showCustomConfirm(`没有新的句子可添加。发现 ${duplicateCount} 个重复句子。`);
-            // 在 finally 块中处理按钮状态，所以这里可以直接返回
             return;
         }
 
@@ -95,29 +94,21 @@ async function addSentencesInBatch() {
 
         dom.batchInput.value = '';
         
-        // === 核心改动：调整执行顺序和提示信息 ===
-        
-        // 1. 先执行耗时的高频词生成和翻译任务
         await generateAndUpdateHighFrequencyWords(currentUser.id);
         
-        // 2. 然后刷新页面上的句子列表
         await fetchSentences();
 
-        // 3. 最后，在所有任务都完成后，再弹出最终的成功提示
         let message = `成功添加 ${sentencesWithUserId.length} 个新句子。`;
         if (duplicateCount > 0) message += `\n忽略了 ${duplicateCount} 个重复句子。`;
         
-        // 4. 在提示信息中加入你建议的文字
         message += "\n\n(单击任何地方关闭窗口)";
         
         await showCustomConfirm(message, false);
-        // ===========================================
 
     } catch (error) {
         console.error('批量添加失败:', error);
         await showCustomConfirm(`批量添加失败: ${error.message}`);
     } finally {
-        // 确保无论成功还是失败，按钮的加载状态都会被移除
         dom.addBatchBtn.classList.remove('loading');
         dom.addBatchBtn.disabled = false;
     }
@@ -141,9 +132,10 @@ async function initializePage() {
     currentUser = await protectPage();
     if (!currentUser) return;
     
-    initializeLogoutButton();
+    await initializeHeader(currentUser);
     await fetchSentences();
     setupEventListeners();
+    initializeDrawerNav();
 }
 
 initializePage();

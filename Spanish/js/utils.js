@@ -166,3 +166,28 @@ export async function generateAndUpdateHighFrequencyWords(userId) {
         if (upsertError) console.error('Supabase 词汇更新错误:', upsertError);
     }
 }
+
+export function initializeDrawerNav() {
+    const hamburgerBtn = document.getElementById('hamburger-btn');
+    const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    if (!hamburgerBtn || !sidebar || !overlay || !sidebarCloseBtn) {
+        return;
+    }
+
+    const openSidebar = () => {
+        sidebar.classList.add('is-open');
+        overlay.classList.add('is-open');
+    };
+
+    const closeSidebar = () => {
+        sidebar.classList.remove('is-open');
+        overlay.classList.remove('is-open');
+    };
+
+    hamburgerBtn.addEventListener('click', openSidebar);
+    sidebarCloseBtn.addEventListener('click', closeSidebar);
+    overlay.addEventListener('click', closeSidebar);
+}

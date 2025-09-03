@@ -30,6 +30,11 @@
                     <label for="signup-password-confirm">确认密码</label>
                     <input type="password" id="signup-password-confirm" class="form-input" required autocomplete="new-password">
                 </div>
+
+                <div class="form-group">
+                    <label for="signup-nickname">昵称 (用于应用内显示)</label>
+                    <input type="text" id="signup-nickname" class="form-input" required autocomplete="nickname" minlength="2" maxlength="50">
+                </div>
                 <p id="error-message" class="error-text"></p>
                 <div class="modal-buttons">
                     <button type="submit" class="btn btn-primary btn-full-width">注册</button>

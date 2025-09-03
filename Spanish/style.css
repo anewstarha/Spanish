@@ -820,3 +820,382 @@ main {
         flex-wrap: wrap;
     }
 }
+/* In style.css */
+
+/* === Header Style Updates === */
+header .container {
+    display: flex;
+    justify-content: space-between; /* 这会将 logo 和 nav 推向两端 */
+    align-items: center;
+}
+
+nav {
+    display: flex;
+    align-items: center;
+}
+
+/* Style for the new profile button in the header */
+.btn-header-profile {
+    background-color: var(--light-blue-bg);
+    color: var(--primary-color);
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.2s, color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.btn-header-profile:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Style for the new red logout button */
+.btn-danger {
+    width: 100%;
+    background-color: var(--danger-color);
+    color: white;
+    border: 1px solid var(--danger-color);
+    margin-top: 1.5rem; /* 与上方内容隔开 */
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+/* === Admin Layout & Sidebar Styles === */
+
+.admin-layout {
+    display: flex;
+    flex-grow: 1;
+}
+
+.sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background-color: var(--card-background);
+    border-right: 1px solid var(--border-color);
+    padding: 1.5rem 1rem;
+    box-sizing: border-box;
+}
+
+.sidebar-header {
+    display: none; /* Only visible on mobile */
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.sidebar-header h3 {
+    margin: 0;
+    color: var(--primary-color);
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius-small);
+    text-decoration: none;
+    font-weight: 500;
+    color: var(--muted-color);
+    transition: background-color 0.2s, color 0.2s;
+    margin-bottom: 0.5rem;
+}
+
+.sidebar-link:hover {
+    background-color: var(--light-blue-bg);
+    color: var(--primary-color);
+}
+
+.sidebar-link.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.sidebar-link.back-to-study {
+    font-weight: bold;
+    color: var(--primary-color);
+    border: 1px solid var(--light-blue-bg);
+}
+
+.sidebar hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 1rem 0;
+}
+
+.admin-content {
+    flex-grow: 1;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.hamburger-btn, .sidebar-close-btn {
+    display: none; /* Hidden by default */
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--primary-color);
+    padding: 0.5rem;
+}
+
+.sidebar-close-btn {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+}
+
+/* === Responsive Admin Layout (Mobile) === */
+@media (max-width: 768px) {
+    .admin-layout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: -280px; /* Hidden off-screen */
+        top: 0;
+        height: 100%;
+        width: 280px;
+        z-index: 1002;
+        transition: left 0.3s ease-in-out;
+        box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    }
+
+    .sidebar.is-open {
+        left: 0; /* Slide in */
+    }
+
+    .sidebar-header, .hamburger-btn {
+        display: flex;
+    }
+    
+    .sidebar-overlay.is-open {
+        display: block;
+    }
+
+    .admin-content {
+        width: 100%;
+        padding: 1.5rem 1rem;
+    }
+    
+    header .container .logo {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .manage-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+/* === Study Page Controls V2 === */
+.study-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.controls-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.icon-btn-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--card-background);
+    color: var(--muted-color);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.icon-btn-text:hover {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background-color: var(--light-blue-bg);
+}
+
+.filters-panel {
+    display: none; /* Hidden by default */
+    background-color: #f8f9fa;
+    padding: 1rem 1.5rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-color);
+}
+
+.filters-panel.is-visible {
+    display: block;
+}
+
+.control-group-wrapper {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+/* === Study Page Controls V3 (Final Design) === */
+.study-controls-v2 {
+    display: flex;
+    justify-content: center; /* Center the mode switcher */
+    align-items: center;
+    position: relative; /* For positioning the actions menu */
+    padding: 0.5rem 0;
+    margin-bottom: 1.5rem;
+}
+
+/* Enhanced Segmented Control for Mode Switcher */
+.mode-switcher {
+    display: inline-flex;
+    background-color: #e9ecef;
+    border-radius: 20px;
+    padding: 4px;
+    position: relative;
+}
+.mode-switcher button {
+    background: none;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    border-radius: 16px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--muted-color);
+    transition: color 0.3s ease;
+    position: relative;
+    z-index: 2;
+}
+.mode-switcher .switcher-pill {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    height: calc(100% - 8px);
+    background-color: var(--card-background);
+    border-radius: 16px;
+    box-shadow: var(--shadow-small);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    z-index: 1;
+}
+.mode-switcher button.active {
+    color: var(--primary-color);
+}
+
+
+/* Actions Menu (Three-dots button and panel) */
+.actions-menu-container {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.actions-menu-btn {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--muted-color);
+    transition: background-color 0.2s, color 0.2s;
+}
+.actions-menu-btn:hover {
+    background-color: #e9ecef;
+    color: var(--primary-color);
+}
+
+.actions-panel {
+    display: none; /* Hidden by default */
+    position: absolute;
+    top: calc(100% + 5px);
+    right: 0;
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    width: 300px;
+    z-index: 100;
+}
+.actions-panel.is-visible {
+    display: block;
+}
+.actions-panel .control-group-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+}
+.actions-panel .control-group {
+    justify-content: space-between;
+}
+.actions-panel hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 1rem 0;
+}
+/* === Final UI Fixes for Alignment and Z-Index === */
+
+/* 第一步：建立一个600px宽的居中“舞台”
+  (这段代码您文件中应该已经存在，请确保它没有被删除)
+*/
+#study-page .main-section {
+    /* 核心保留 */
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    
+    /* 关键新增下面这一行 */
+    width: 100%;
+    
+    /* 删除我之前建议添加的这两行 */
+    /* display: flex; */
+    /* flex-direction: column; */
+}
+
+/* 第二步：让控制栏（“尺子”）撑满这个舞台
+  (这是最关键的修改)
+*/
+.study-controls-v2 {
+    /* 请在 .study-controls-v2 规则中找到并合并以下样式。
+      如果您没有这个规则，请直接添加。
+      核心是确保 width: 100% 存在。
+    */
+    width: 100%; /* <-- 核心修改：添加此行以拉伸容器 */
+    
+    /* 以下是该规则已有的其他样式，请保留 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    padding: 0.5rem 0;
+    margin-bottom: 1.5rem;
+    z-index: 10;
+}
