@@ -1,5 +1,3 @@
-// js/study-main.js (完整最终版)
-
 import { supabase } from './config.js';
 import { protectPage, initializeHeader } from './auth.js';
 import { showCustomConfirm, readText, generateAndUpdateHighFrequencyWords, initializeDropdowns } from './utils.js';
@@ -8,13 +6,11 @@ import { showCustomConfirm, readText, generateAndUpdateHighFrequencyWords, initi
 let currentUser = null;
 let currentStudyMode = 'sentences';
 let allSentences = [], currentFilteredSentences = [], sentenceIndex = 0, sentenceStatusFilter = 'unmastered', sentenceSortOrder = 'sequential';
-let allWords = [], currentFilteredWords = [], wordIndex = 0;
-// 【修改】将单词筛选的默认状态改为 'unmastered'
-let wordStatusFilter = 'unmastered'; 
-let wordSortOrder = 'frequency';
+let allWords = [], currentFilteredWords = [], wordIndex = 0, wordStatusFilter = 'unmastered', wordSortOrder = 'frequency';
 let wordTranslationMap = new Map();
 
 // --- 2. DOM Elements ---
+// 【最终修复】恢复了所有对弹窗(Modal)元素的引用
 const dom = {
     filterMenuBtn: document.getElementById('filter-menu-btn'),
     filterPanel: document.getElementById('filter-panel'),
@@ -44,6 +40,18 @@ const dom = {
     wordMasteredToggle: document.getElementById('word-mastered-toggle'),
     wordReadBtn: document.getElementById('word-read-btn'),
     wordSlowReadBtn: document.getElementById('word-slow-read-btn'),
+    aiExplanationModal: document.getElementById('aiExplanationModal'),
+    aiExplanationTitle: document.getElementById('aiExplanationTitle'),
+    aiExplanationContent: document.getElementById('aiExplanationContent'),
+    aiExplanationCloseBtn: document.getElementById('aiExplanationCloseBtn'),
+    addSentenceModal: document.getElementById('addSentenceModal'),
+    addSentenceForm: document.getElementById('add-sentence-form'),
+    editSentenceModal: document.getElementById('editSentenceModal'),
+    editSentenceForm: document.getElementById('edit-sentence-form'),
+    sentenceListModal: document.getElementById('sentenceListModal'),
+    sentenceListTitle: document.getElementById('sentenceListTitle'),
+    sentenceListContent: document.getElementById('sentence-list-content'),
+    sentenceListCloseBtn: document.getElementById('sentenceListCloseBtn'),
     sentenceStatusFilterGroup: document.getElementById('status-filter-group'),
     sentenceSortOrderGroup: document.getElementById('sort-order-group'),
     wordStatusFilterGroup: document.getElementById('word-status-filter-group'),
@@ -303,17 +311,17 @@ async function handleAddSentence(e) {
 function openEditSentenceModal() {
     if (currentFilteredSentences.length === 0) return;
     const sentenceToEdit = currentFilteredSentences[sentenceIndex];
-    document.getElementById('edit-sentence-id').value = sentenceToEdit.id;
-    document.getElementById('edit-spanish-text').value = sentenceToEdit.spanish_text;
-    document.getElementById('edit-chinese-text').value = sentenceToEdit.chinese_translation;
-    document.getElementById('editSentenceModal').style.display = 'flex';
+    dom.editSentenceForm.querySelector('#edit-sentence-id').value = sentenceToEdit.id;
+    dom.editSentenceForm.querySelector('#edit-spanish-text').value = sentenceToEdit.spanish_text;
+    dom.editSentenceForm.querySelector('#edit-chinese-text').value = sentenceToEdit.chinese_translation;
+    dom.editSentenceModal.style.display = 'flex';
 }
 
 async function handleEditSentence(e) {
     e.preventDefault();
-    const id = document.getElementById('edit-sentence-id').value;
-    const spanishText = document.getElementById('edit-spanish-text').value.trim();
-    const chineseText = document.getElementById('edit-chinese-text').value.trim();
+    const id = dom.editSentenceForm.querySelector('#edit-sentence-id').value;
+    const spanishText = dom.editSentenceForm.querySelector('#edit-spanish-text').value.trim();
+    const chineseText = dom.editSentenceForm.querySelector('#edit-chinese-text').value.trim();
     if (!spanishText || !chineseText) {
         await showCustomConfirm('西班牙语和中文翻译均不能为空！');
         return;
@@ -322,7 +330,7 @@ async function handleEditSentence(e) {
     if (error) {
         await showCustomConfirm(`更新失败: ${error.message}`);
     } else {
-        document.getElementById('editSentenceModal').style.display = 'none';
+        dom.editSentenceModal.style.display = 'none';
         await showCustomConfirm('更新成功！', false);
         setTimeout(() => document.getElementById('confirmModal').style.display = 'none', 1000);
         await fetchInitialData();
@@ -407,7 +415,7 @@ function showSentencesForWord() {
     } else {
         dom.sentenceListContent.innerHTML = '<p>暂无更多例句。</p>';
     }
-    document.getElementById('sentenceListModal').style.display = 'flex';
+    dom.sentenceListModal.style.display = 'flex';
 }
 
 // --- 7. Event Listener Setup ---
@@ -422,8 +430,6 @@ function setupEventListeners() {
 
     // 全局点击事件，用于关闭打开的面板
     document.addEventListener('click', (e) => {
-        // 关闭头部用户下拉菜单 (由 utils.js 的 initializeDropdowns 处理)
-
         // 关闭筛选面板
         if (
             dom.filterPanel &&
@@ -532,7 +538,7 @@ function setupEventListeners() {
     // 其他按钮
     dom.addSentenceLink.addEventListener('click', () => {
         resetAddSentenceModal();
-        document.getElementById('addSentenceModal').style.display = 'flex';
+        dom.addSentenceModal.style.display = 'flex';
     });
     dom.editSentenceLink.addEventListener('click', openEditSentenceModal);
     dom.deleteSentenceLink.addEventListener('click', deleteCurrentSentence);
@@ -550,14 +556,14 @@ function setupEventListeners() {
     dom.wordSlowReadBtn.addEventListener('click', () => readText(currentFilteredWords[wordIndex]?.spanish_word, true, dom.wordSlowReadBtn));
 
     // 弹窗表单
-    document.getElementById('add-sentence-form').addEventListener('submit', handleAddSentence);
-    document.getElementById('cancel-add-btn').addEventListener('click', () => document.getElementById('addSentenceModal').style.display = 'none');
+    dom.addSentenceForm.addEventListener('submit', handleAddSentence);
+    dom.addSentenceForm.querySelector('#cancel-add-btn').addEventListener('click', () => dom.addSentenceModal.style.display = 'none');
     
-    document.getElementById('edit-sentence-form').addEventListener('submit', handleEditSentence);
-    document.getElementById('cancel-edit-btn').addEventListener('click', () => document.getElementById('editSentenceModal').style.display = 'none');
+    dom.editSentenceForm.addEventListener('submit', handleEditSentence);
+    dom.editSentenceForm.querySelector('#cancel-edit-btn').addEventListener('click', () => dom.editSentenceModal.style.display = 'none');
     
-    document.getElementById('aiExplanationCloseBtn').addEventListener('click', () => document.getElementById('aiExplanationModal').style.display = 'none');
-    document.getElementById('sentenceListCloseBtn').addEventListener('click', () => document.getElementById('sentenceListModal').style.display = 'none');
+    dom.aiExplanationCloseBtn.addEventListener('click', () => dom.aiExplanationModal.style.display = 'none');
+    dom.sentenceListCloseBtn.addEventListener('click', () => dom.sentenceListModal.style.display = 'none');
 }
 
 // --- 8. Page Initialization ---
