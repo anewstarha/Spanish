@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学习测试 - 西班牙语学习助手</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header>
+        <div class="container header-container">
+            <a href="index.html" class="logo">
+                <svg class="back-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><polyline points="12 19 5 12 12 5"></polyline></svg>
+                <span>西班牙语学习助手</span>
+            </a>
+            <nav class="header-actions">
+                <div class="dropdown-container">
+                    <button class="icon-btn-header user-avatar-btn" id="user-menu-btn" title="用户菜单">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    </button>
+                    <div class="dropdown-menu" id="user-menu">
+                        <div class="dropdown-header" id="user-menu-greeting">你好, ...</div>
+                        <a href="quiz.html" class="dropdown-item">学习测试</a>
+                        <a href="profile.html" class="dropdown-item">个人中心</a>
+                        <a href="manage.html" class="dropdown-item">内容管理</a>
+                        <hr class="dropdown-divider">
+                        <a href="#" class="dropdown-item" id="logout-button">退出登录</a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main-content">
+        <div class="container page-container">
+
+            <div id="quiz-setup" class="card quiz-card">
+                <h2 class="quiz-title">学习测试</h2>
+                <form id="quiz-setup-form">
+                    <div class="form-group">
+                        <label class="form-label">1. 选择测试内容：</label>
+                        <div class="segmented-control" id="content-type-selector">
+                            <button type="button" data-type="sentences" class="active">句子测试</button>
+                            <button type="button" data-type="words">单词测试</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">2. 选择测试范围：</label>
+                        <div id="scope-selection" class="scope-selection-group">
+                            <div class="loading-spinner"></div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-full-width" id="start-quiz-btn">开始测试</button>
+                </form>
+            </div>
+
+            <div id="quiz-view" class="card quiz-card" style="display: none;">
+                <div class="quiz-header">
+                    <span id="question-progress">问题 1 / 10</span>
+                    <button id="replay-audio-btn" class="icon-btn-header" title="重播">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    </button>
+                </div>
+                <div id="question-content" class="question-content">
+                    </div>
+                <div id="feedback-container" class="feedback-container"></div>
+                 <button id="next-question-btn" class="btn btn-secondary" style="display: none;">下一题</button>
+            </div>
+
+            <div id="results-view" class="card quiz-card" style="display: none;">
+                <h2 class="quiz-title">测试完成！</h2>
+                <p id="score-text" class="score-text">您答对了 0 / 0 题！</p>
+                <div id="wrong-answers-list" class="wrong-answers-list">
+                    <h3>错题回顾：</h3>
+                    </div>
+                <div class="results-actions">
+                    <button id="retest-wrong-btn" class="btn btn-primary">仅针对错题再测一次</button>
+                    <a href="index.html" class="btn btn-secondary">返回学习</a>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script type="module" src="js/quiz-main.js"></script>
+</body>
+</html>
