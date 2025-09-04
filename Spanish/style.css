@@ -36,6 +36,7 @@ body {
 
 main {
     flex-grow: 1;
+    padding: 2rem 0;
 }
 
 .container {
@@ -44,49 +45,132 @@ main {
     padding: 0 1rem;
 }
 
-/* === Header Styles === */
+/* ============================================= */
+/* 全局统一头部 (Unified Header)                   */
+/* ============================================= */
 header {
     background-color: var(--card-background);
     box-shadow: 0 2px 4px var(--shadow-color);
-    padding: 1rem 0;
     position: sticky;
     top: 0;
     z-index: 1000;
-    flex-shrink: 0;
     height: var(--header-height);
     box-sizing: border-box;
-    display: flex;
-    align-items: center;
 }
 
-header .container {
+.header-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    height: 100%;
 }
 
 .logo {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: bold;
     color: var(--primary-color);
     text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-nav a {
+.logo .back-icon {
+    stroke: var(--primary-color);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.icon-btn-header {
+    background: none;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
     color: var(--muted-color);
-    text-decoration: none;
-    margin-left: 1.5rem;
-    font-weight: 500;
-    transition: color 0.3s;
+    transition: background-color 0.2s, color 0.2s;
+    padding: 0;
 }
 
-nav a:hover, nav a.active {
+.icon-btn-header:hover {
+    background-color: #f0f0f0;
     color: var(--primary-color);
 }
 
-/* === Main Content & Controls === */
-main {
-    padding: 2rem 0;
+.user-avatar-btn {
+    background-color: var(--light-blue-bg);
+    color: var(--primary-color);
+}
+
+.user-avatar-btn:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.dropdown-container {
+    position: relative;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 0;
+    width: 180px;
+    z-index: 1001;
+    box-sizing: border-box;
+}
+
+.dropdown-menu.is-visible {
+    display: block;
+}
+
+.dropdown-header {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    color: var(--muted-color);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dropdown-item {
+    display: block;
+    padding: 0.6rem 1rem;
+    color: var(--text-color-dark);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+.dropdown-divider {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 0.5rem 0;
+}
+
+/* ============================================= */
+/* 页面主体内容 (Main Content)                   */
+/* ============================================= */
+.page-container {
+    padding-top: 1rem;
 }
 
 .content-wrapper {
@@ -101,27 +185,69 @@ main {
     width: 100%;
 }
 
-.main-section {
-    margin-bottom: 2rem;
+#study-page .main-section {
+    max-width: 600px;
+    margin: 0 auto 1rem auto;
+    width: 100%;
 }
 
-.controls {
+/* 父容器负责居中和作为定位基准 */
+.study-controls-v2 {
+    width: 100%;
     display: flex;
-    gap: 1.5rem;
-    flex-wrap: wrap;
+    justify-content: center; /* 确保切换器居中 */
     align-items: center;
-    margin-bottom: 2rem;
+    position: relative; /* 为筛选容器提供定位上下文 */
+    padding: 0.5rem 0;
+    margin-bottom: 1rem;
+}
+
+/* 筛选容器绝对定位到右侧，并垂直居中 */
+.filter-container {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+}
+
+.actions-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 5px);
+    right: 0;
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    width: 300px;
+    z-index: 100;
+    flex-direction: column;
+    gap: 1rem;
+}
+.actions-panel.is-visible {
+    display: flex;
+}
+
+.control-group-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
 .control-group {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    justify-content: space-between;
+    gap: 1rem;
 }
 
 .control-label {
     font-weight: 500;
     color: var(--muted-color);
+    font-size: 0.9rem;
+    white-space: nowrap;
 }
 
 .segmented-control {
@@ -134,26 +260,59 @@ main {
 .segmented-control button {
     background-color: transparent;
     border: none;
-    padding: 0.5rem 1rem;
+    padding: 0.4rem 0.5rem;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 500;
+    font-size: 0.85rem;
+    font-weight: normal;
     color: var(--muted-color);
     transition: background-color 0.2s, color 0.2s;
+    flex: 1;
+    white-space: nowrap;
 }
-
 .segmented-control button:hover:not(.active) {
     background-color: #dee2e6;
 }
-
 .segmented-control button.active {
-    background-color: var(--card-background);
-    color: var(--primary-color);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    background-color: var(--primary-color);
+    color: white;
 }
 
-/* === Card Styles (General and Study Cards) === */
+.mode-switcher {
+    display: inline-flex;
+    background-color: #e9ecef;
+    border-radius: 20px;
+    padding: 4px;
+    position: relative;
+}
+.mode-switcher button {
+    background: none;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    border-radius: 16px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--muted-color);
+    transition: color 0.3s ease;
+    position: relative;
+    z-index: 2;
+}
+.mode-switcher .switcher-pill {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    height: calc(100% - 8px);
+    background-color: var(--card-background);
+    border-radius: 16px;
+    box-shadow: var(--shadow-small);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    z-index: 1;
+}
+.mode-switcher button.active {
+    color: var(--primary-color);
+}
+
 .card-section {
     display: flex;
     flex-direction: column;
@@ -258,7 +417,6 @@ main {
     background-color: var(--primary-color);
 }
 
-/* === Word Highlighting and Interaction Styles === */
 .highlight-word {
     color: #0056b3;
     font-weight: bold;
@@ -279,7 +437,6 @@ main {
     animation: pulse 1s;
 }
 
-/* === Card Actions & Footer === */
 .card-actions {
     display: flex;
     gap: 1.5rem;
@@ -326,12 +483,6 @@ main {
     background-color: var(--primary-color);
     color: var(--card-background);
     animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(0, 123, 255, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
 }
 
 .card-footer {
@@ -397,7 +548,6 @@ main {
     color: var(--danger-color);
 }
 
-/* === Authentication Page Styles === */
 .auth-container {
     display: flex;
     flex-direction: column;
@@ -409,13 +559,17 @@ main {
     box-sizing: border-box;
 }
 
+.card {
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    box-shadow: 0 4px 8px var(--shadow-color);
+}
+
 .auth-card {
     width: 100%;
     max-width: 400px;
     padding: 2.5rem 2rem;
-    box-shadow: var(--shadow-small);
-    border-radius: var(--border-radius);
-    background-color: var(--card-background);
 }
 
 .auth-title {
@@ -488,10 +642,9 @@ main {
     text-decoration: underline;
 }
 
-/* === Manage Page Specific Styles === */
 .manage-grid {
     display: grid;
-    grid-template-columns: 1fr 2fr;
+    grid-template-columns: 1fr 1.5fr;
     gap: 2rem;
     align-items: start;
 }
@@ -499,16 +652,15 @@ main {
 .batch-add {
     display: flex;
     flex-direction: column;
-    padding: 2rem;
 }
 
-.batch-add .section-title {
+.section-title {
     font-size: 1.5rem;
     color: var(--text-color-dark);
     margin-top: 0;
 }
 
-.batch-add .section-subtitle {
+.section-subtitle {
     font-size: 0.9rem;
     color: var(--muted-color);
     margin-top: -0.5rem;
@@ -568,10 +720,6 @@ main {
     display: block;
 }
 
-.sentence-list-card {
-    padding: 2rem;
-}
-
 .sentence-list-header {
     display: flex;
     flex-direction: column;
@@ -598,22 +746,19 @@ main {
     overflow-y: auto;
 }
 
-#sentence-list .sentence-item {
+.sentence-item {
     cursor: pointer;
     transition: background-color 0.2s;
     border-radius: 4px;
-}
-
-#sentence-list .sentence-item:hover {
-    background-color: var(--light-blue-bg);
-}
-
-.sentence-item {
     display: flex;
     align-items: center;
     gap: 1rem;
     padding: 0.8rem 0.5rem;
     border-bottom: 1px solid var(--border-color);
+}
+
+.sentence-item:hover {
+    background-color: var(--light-blue-bg);
 }
 
 .sentence-item:last-child {
@@ -644,7 +789,6 @@ main {
     padding: 2rem;
 }
 
-/* === Other General Styles (Modals, Buttons, etc.) === */
 .modal {
     display: none;
     position: fixed;
@@ -669,7 +813,6 @@ main {
     position: relative;
 }
 
-/* 【新增】为“新增句子”弹窗内的文字链接添加样式 */
 .modal-secondary-action {
     text-align: center;
     margin-top: 1rem;
@@ -683,7 +826,6 @@ main {
 .modal-secondary-action a:hover {
     text-decoration: none;
 }
-
 
 #aiExplanationModal .modal-content, #sentenceListModal .modal-content {
     max-width: 700px;
@@ -702,10 +844,6 @@ main {
     max-height: 400px;
     overflow-y: auto;
     white-space: pre-wrap;
-}
-
-.sentence-list-content {
-    text-align: left;
 }
 
 .sentence-list-item {
@@ -795,26 +933,25 @@ main {
     border-color: #545b62;
 }
 
+.btn-danger {
+    background-color: var(--danger-color);
+    color: white;
+    border-color: var(--danger-color);
+}
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
 
-/* === Responsive Styles === */
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(0, 123, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
+}
+
 @media (max-width: 768px) {
-    .controls {
-        gap: 1rem;
-        flex-direction: column;
-        align-items: stretch;
-    }
-    header .container {
-        flex-direction: column;
-        gap: 1rem;
-        justify-content: center;
-        height: auto;
-    }
-    header {
-        height: auto;
-        padding: 0.5rem 0;
-    }
-    nav a {
-        margin: 0 0.5rem;
+    .logo {
+        font-size: 1rem;
     }
     main {
         padding: 1rem 0;
@@ -835,392 +972,4 @@ main {
     .sentence-item {
         flex-wrap: wrap;
     }
-}
-/* In style.css */
-
-/* === Header Style Updates === */
-header .container {
-    display: flex;
-    justify-content: space-between; /* 这会将 logo 和 nav 推向两端 */
-    align-items: center;
-}
-
-nav {
-    display: flex;
-    align-items: center;
-}
-
-/* Style for the new profile button in the header */
-.btn-header-profile {
-    background-color: var(--light-blue-bg);
-    color: var(--primary-color);
-    padding: 0.5rem 1rem;
-    border-radius: var(--border-radius);
-    text-decoration: none;
-    font-weight: 500;
-    transition: background-color 0.2s, color 0.2s;
-    display: inline-flex;
-    align-items: center;
-    white-space: nowrap;
-}
-
-.btn-header-profile:hover {
-    background-color: var(--primary-color);
-    color: white;
-}
-
-/* Style for the new red logout button */
-.btn-danger {
-    width: 100%;
-    background-color: var(--danger-color);
-    color: white;
-    border: 1px solid var(--danger-color);
-    margin-top: 1.5rem; /* 与上方内容隔开 */
-}
-
-.btn-danger:hover {
-    background-color: #c82333;
-    border-color: #bd2130;
-}
-/* === Admin Layout & Sidebar Styles === */
-
-.admin-layout {
-    display: flex;
-    flex-grow: 1;
-}
-
-.sidebar {
-    width: 240px;
-    flex-shrink: 0;
-    background-color: var(--card-background);
-    border-right: 1px solid var(--border-color);
-    padding: 1.5rem 1rem;
-    box-sizing: border-box;
-}
-
-.sidebar-header {
-    display: none; /* Only visible on mobile */
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-}
-
-.sidebar-header h3 {
-    margin: 0;
-    color: var(--primary-color);
-}
-
-.sidebar-link {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    border-radius: var(--border-radius-small);
-    text-decoration: none;
-    font-weight: 500;
-    color: var(--muted-color);
-    transition: background-color 0.2s, color 0.2s;
-    margin-bottom: 0.5rem;
-}
-
-.sidebar-link:hover {
-    background-color: var(--light-blue-bg);
-    color: var(--primary-color);
-}
-
-.sidebar-link.active {
-    background-color: var(--primary-color);
-    color: white;
-}
-
-.sidebar-link.back-to-study {
-    font-weight: bold;
-    color: var(--primary-color);
-    border: 1px solid var(--light-blue-bg);
-}
-
-.sidebar hr {
-    border: none;
-    border-top: 1px solid var(--border-color);
-    margin: 1rem 0;
-}
-
-.admin-content {
-    flex-grow: 1;
-    padding: 2rem;
-    overflow-y: auto;
-}
-
-.hamburger-btn, .sidebar-close-btn {
-    display: none; /* Hidden by default */
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--primary-color);
-    padding: 0.5rem;
-}
-
-.sidebar-close-btn {
-    font-size: 2rem;
-    line-height: 1;
-}
-
-.sidebar-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1001;
-}
-
-/* === Responsive Admin Layout (Mobile) === */
-@media (max-width: 768px) {
-    .admin-layout {
-        flex-direction: column;
-    }
-
-    .sidebar {
-        position: fixed;
-        left: -280px; /* Hidden off-screen */
-        top: 0;
-        height: 100%;
-        width: 280px;
-        z-index: 1002;
-        transition: left 0.3s ease-in-out;
-        box-shadow: 0 0 15px rgba(0,0,0,0.2);
-    }
-
-    .sidebar.is-open {
-        left: 0; /* Slide in */
-    }
-
-    .sidebar-header, .hamburger-btn {
-        display: flex;
-    }
-    
-    .sidebar-overlay.is-open {
-        display: block;
-    }
-
-    .admin-content {
-        width: 100%;
-        padding: 1.5rem 1rem;
-    }
-    
-    header .container .logo {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-    }
-
-    .manage-grid {
-        grid-template-columns: 1fr !important;
-    }
-}
-/* === Study Page Controls V2 === */
-.study-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-.controls-actions {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.icon-btn-text {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background-color: var(--card-background);
-    color: var(--muted-color);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-decoration: none;
-}
-
-.icon-btn-text:hover {
-    color: var(--primary-color);
-    border-color: var(--primary-color);
-    background-color: var(--light-blue-bg);
-}
-
-.filters-panel {
-    display: none; /* Hidden by default */
-    background-color: #f8f9fa;
-    padding: 1rem 1.5rem;
-    border-radius: var(--border-radius);
-    margin-bottom: 2rem;
-    border: 1px solid var(--border-color);
-}
-
-.filters-panel.is-visible {
-    display: block;
-}
-
-.control-group-wrapper {
-    display: flex;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-    align-items: center;
-}
-/* === Study Page Controls V3 (Final Design) === */
-.study-controls-v2 {
-    display: flex;
-    justify-content: center; /* Center the mode switcher */
-    align-items: center;
-    position: relative; /* For positioning the actions menu */
-    padding: 0.5rem 0;
-    margin-bottom: 1.5rem;
-}
-
-/* Enhanced Segmented Control for Mode Switcher */
-.mode-switcher {
-    display: inline-flex;
-    background-color: #e9ecef;
-    border-radius: 20px;
-    padding: 4px;
-    position: relative;
-}
-.mode-switcher button {
-    background: none;
-    border: none;
-    padding: 0.5rem 1.5rem;
-    border-radius: 16px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--muted-color);
-    transition: color 0.3s ease;
-    position: relative;
-    z-index: 2;
-}
-.mode-switcher .switcher-pill {
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    height: calc(100% - 8px);
-    background-color: var(--card-background);
-    border-radius: 16px;
-    box-shadow: var(--shadow-small);
-    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    z-index: 1;
-}
-.mode-switcher button.active {
-    color: var(--primary-color);
-}
-
-
-/* Actions Menu (Three-dots button and panel) */
-.actions-menu-container {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.actions-menu-btn {
-    background: none;
-    border: 1px solid transparent;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: var(--muted-color);
-    transition: background-color 0.2s, color 0.2s;
-}
-.actions-menu-btn:hover {
-    background-color: #e9ecef;
-    color: var(--primary-color);
-}
-
-.actions-panel {
-    display: none; /* Hidden by default */
-    position: absolute;
-    top: calc(100% + 5px);
-    right: 0;
-    background-color: var(--card-background);
-    border-radius: var(--border-radius);
-    box-shadow: 0 4px 12px var(--shadow-color);
-    border: 1px solid var(--border-color);
-    padding: 1rem;
-    width: 300px;
-    z-index: 100;
-}
-.actions-panel.is-visible {
-    display: block;
-}
-.actions-panel .control-group-wrapper {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-}
-.actions-panel .control-group {
-    justify-content: space-between;
-}
-
-/* === Final UI Fixes for Alignment and Z-Index === */
-#study-page .main-section {
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-    width: 100%;
-}
-
-.study-controls-v2 {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    padding: 0.5rem 0;
-    margin-bottom: 1.5rem;
-    z-index: 10;
-}
-/* === 响应式头部重叠问题修复 === */
-@media (max-width: 768px) {
-  
-  /* 1. 重新定义容器的布局方式 */
-  header .container {
-    flex-direction: row; /* 强制所有头部元素保持水平排列 */
-    justify-content: space-between; /* 将两端的元素推向边缘，中间的元素自动居中 */
-    gap: 0.5rem; /* 缩小元素间距 */
-    padding: 0 0.5rem; /* 稍微增加左右内边距，避免元素贴边 */
-  }
-
-  /* 2. 取消Logo的绝对定位，让它回归正常的Flexbox布局 */
-  header .container .logo {
-    position: static; /* 取消 absolute 定位 */
-    transform: none;  /* 移除 transform 效果 */
-    left: auto;       /* 重置 left 属性 */
-    
-    /* 为了在极窄屏幕上能自动缩放，做一些优化 */
-    flex-grow: 0;
-    flex-shrink: 1; /* 允许Logo在空间不足时缩小 */
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* 3. 优化用户昵称标签，防止文本过长 */
-  .btn-header-profile {
-    flex-shrink: 0; /* 不允许用户标签缩小，保持其基本宽度 */
-    max-width: 150px; /* 限制最大宽度，防止昵称过长时挤压Logo */
-    overflow: hidden;
-    text-overflow: ellipsis; /* 过长的文本显示为... */
-    white-space: nowrap;
-  }
 }

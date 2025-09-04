@@ -1,35 +1,25 @@
-// js/study-main.js - The Final & Complete Unified Study Script
+// js/study-main.js (完整最终版)
 
 import { supabase } from './config.js';
 import { protectPage, initializeHeader } from './auth.js';
-import { showCustomConfirm, readText, generateAndUpdateHighFrequencyWords } from './utils.js';
+import { showCustomConfirm, readText, generateAndUpdateHighFrequencyWords, initializeDropdowns } from './utils.js';
 
 // --- 1. State Management ---
 let currentUser = null;
-let currentStudyMode = 'sentences'; // 'sentences' or 'words'
-
-// Sentence State
-let allSentences = [];
-let wordTranslationMap = new Map();
-let currentFilteredSentences = [];
-let sentenceIndex = 0;
-let sentenceStatusFilter = 'unmastered';
-let sentenceSortOrder = 'sequential';
-
-// Word State
-let allWords = [];
-let currentFilteredWords = [];
-let wordIndex = 0;
-let wordStatusFilter = 'all';
+let currentStudyMode = 'sentences';
+let allSentences = [], currentFilteredSentences = [], sentenceIndex = 0, sentenceStatusFilter = 'unmastered', sentenceSortOrder = 'sequential';
+let allWords = [], currentFilteredWords = [], wordIndex = 0;
+// 【修改】将单词筛选的默认状态改为 'unmastered'
+let wordStatusFilter = 'unmastered'; 
 let wordSortOrder = 'frequency';
-
+let wordTranslationMap = new Map();
 
 // --- 2. DOM Elements ---
 const dom = {
+    filterMenuBtn: document.getElementById('filter-menu-btn'),
+    filterPanel: document.getElementById('filter-panel'),
     studyModeSwitcher: document.getElementById('study-mode-switcher'),
     switcherPill: document.getElementById('switcher-pill'),
-    actionsMenuBtn: document.getElementById('actions-menu-btn'),
-    actionsPanel: document.getElementById('actions-panel'),
     sentenceFilters: document.getElementById('sentence-filters'),
     wordFilters: document.getElementById('word-filters'),
     emptyMessage: document.getElementById('empty-message'),
@@ -54,36 +44,11 @@ const dom = {
     wordMasteredToggle: document.getElementById('word-mastered-toggle'),
     wordReadBtn: document.getElementById('word-read-btn'),
     wordSlowReadBtn: document.getElementById('word-slow-read-btn'),
-    aiExplanationModal: document.getElementById('aiExplanationModal'),
-    aiExplanationTitle: document.getElementById('aiExplanationTitle'),
-    aiExplanationContent: document.getElementById('aiExplanationContent'),
-    aiExplanationCloseBtn: document.getElementById('aiExplanationCloseBtn'),
-    addSentenceModal: document.getElementById('addSentenceModal'),
-    addSentenceForm: document.getElementById('add-sentence-form'),
-    addSentenceTitle: document.getElementById('add-sentence-title'),
-    addSpanishGroup: document.getElementById('add-spanish-group'),
-    addChineseGroup: document.getElementById('add-chinese-group'),
-    newSpanishText: document.getElementById('new-spanish-text'),
-    newChineseText: document.getElementById('new-chinese-text'),
-    addSentenceError: document.getElementById('add-sentence-error'),
-    addSentenceSubmitBtn: document.getElementById('add-sentence-submit-btn'),
-    cancelAddBtn: document.getElementById('cancel-add-btn'),
-    editSentenceModal: document.getElementById('editSentenceModal'),
-    editSentenceForm: document.getElementById('edit-sentence-form'),
-    cancelEditBtn: document.getElementById('cancel-edit-btn'),
-    editSentenceId: document.getElementById('edit-sentence-id'),
-    editSpanishText: document.getElementById('edit-spanish-text'),
-    editChineseText: document.getElementById('edit-chinese-text'),
-    sentenceListModal: document.getElementById('sentenceListModal'),
-    sentenceListTitle: document.getElementById('sentenceListTitle'),
-    sentenceListContent: document.getElementById('sentence-list-content'),
-    sentenceListCloseBtn: document.getElementById('sentenceListCloseBtn'),
     sentenceStatusFilterGroup: document.getElementById('status-filter-group'),
     sentenceSortOrderGroup: document.getElementById('sort-order-group'),
     wordStatusFilterGroup: document.getElementById('word-status-filter-group'),
     wordSortOrderGroup: document.getElementById('word-sort-order-group'),
 };
-
 
 // --- 3. Data Fetching ---
 async function fetchInitialData() {
@@ -114,7 +79,6 @@ async function fetchInitialData() {
     return true;
 }
 
-
 // --- 4. UI Rendering & State Updates ---
 function updatePillPosition() {
     const activeButton = dom.studyModeSwitcher.querySelector('button.active');
@@ -125,16 +89,15 @@ function updatePillPosition() {
 }
 
 function renderUI() {
-    dom.emptyMessage.style.display = 'none';
-    if (currentStudyMode === 'sentences') {
-        dom.wordCardContainer.style.display = 'none';
-        dom.wordFilters.style.display = 'none';
-        dom.sentenceFilters.style.display = 'flex';
+    const isSentenceMode = currentStudyMode === 'sentences';
+    if (dom.sentenceFilters) dom.sentenceFilters.style.display = isSentenceMode ? 'flex' : 'none';
+    if (dom.wordFilters) dom.wordFilters.style.display = isSentenceMode ? 'none' : 'flex';
+
+    if (isSentenceMode) {
+        if (dom.wordCardContainer) dom.wordCardContainer.style.display = 'none';
         renderSentenceCard();
     } else {
-        dom.sentenceCardContainer.style.display = 'none';
-        dom.sentenceFilters.style.display = 'none';
-        dom.wordFilters.style.display = 'flex';
+        if (dom.sentenceCardContainer) dom.sentenceCardContainer.style.display = 'none';
         renderWordCard();
     }
 }
@@ -149,6 +112,7 @@ function renderSentenceCard() {
         else dom.emptyMessage.textContent = '您的句子列表为空，请在“管理”页面添加新句子。';
         return;
     }
+    dom.emptyMessage.style.display = 'none';
     dom.sentenceCardContainer.style.display = 'flex';
     const currentSentence = currentFilteredSentences[sentenceIndex];
     
@@ -178,6 +142,7 @@ function renderWordCard() {
         else dom.emptyMessage.textContent = '暂无高频词汇，请先在“管理”页面添加一些句子。';
         return;
     }
+    dom.emptyMessage.style.display = 'none';
     dom.wordCardContainer.style.display = 'flex';
     const currentWord = currentFilteredWords[wordIndex];
     if (!currentWord) return;
@@ -188,7 +153,6 @@ function renderWordCard() {
     dom.wordSourceSentence.textContent = currentWord.source_sentence;
     dom.wordMasteredToggle.classList.toggle('mastered', currentWord.mastered);
 }
-
 
 // --- 5. Filtering and Sorting Logic ---
 function filterAndSortSentences() {
@@ -213,10 +177,7 @@ function filterAndSortWords() {
     if (wordIndex >= currentFilteredWords.length) wordIndex = 0;
 }
 
-
-// --- 6. Core Functionality (from original files) ---
-
-// SENTENCE Functions
+// --- 6. Core Functionality ---
 async function toggleSentenceMastered() {
     if (currentFilteredSentences.length === 0) return;
     const sentence = currentFilteredSentences[sentenceIndex];
@@ -251,29 +212,33 @@ async function deleteCurrentSentence() {
 }
 
 function resetAddSentenceModal() {
-    dom.addSentenceTitle.textContent = '新增句子';
-    dom.addSentenceForm.reset();
-    dom.addChineseGroup.style.display = 'none';
-    dom.newChineseText.value = '';
-    dom.addSentenceSubmitBtn.textContent = '获取翻译';
-    dom.addSentenceSubmitBtn.disabled = false;
-    dom.addSentenceError.textContent = '';
-    dom.addSentenceForm.dataset.state = 'input'; // 'input', 'confirm'
+    const addSentenceModal = document.getElementById('addSentenceModal');
+    addSentenceModal.querySelector('#add-sentence-title').textContent = '新增句子';
+    addSentenceModal.querySelector('form').reset();
+    document.getElementById('add-chinese-group').style.display = 'none';
+    document.getElementById('new-chinese-text').value = '';
+    document.getElementById('add-sentence-submit-btn').textContent = '获取翻译';
+    document.getElementById('add-sentence-submit-btn').disabled = false;
+    document.getElementById('add-sentence-error').textContent = '';
+    addSentenceModal.querySelector('form').dataset.state = 'input';
 }
 
 async function handleAddSentence(e) {
     e.preventDefault();
-    const state = dom.addSentenceForm.dataset.state || 'input';
-    const spanishText = dom.newSpanishText.value.trim();
+    const form = e.target;
+    const state = form.dataset.state || 'input';
+    const spanishText = document.getElementById('new-spanish-text').value.trim();
+    const errorEl = document.getElementById('add-sentence-error');
+    const submitBtn = document.getElementById('add-sentence-submit-btn');
 
     if (state === 'input') {
         if (!spanishText) {
-            dom.addSentenceError.textContent = '请输入西班牙语句子。';
+            errorEl.textContent = '请输入西班牙语句子。';
             return;
         }
-        dom.addSentenceSubmitBtn.disabled = true;
-        dom.addSentenceSubmitBtn.textContent = '翻译中...';
-        dom.addSentenceError.textContent = '';
+        submitBtn.disabled = true;
+        submitBtn.textContent = '翻译中...';
+        errorEl.textContent = '';
 
         try {
             const { data: { session } } = await supabase.auth.getSession();
@@ -289,28 +254,28 @@ async function handleAddSentence(e) {
             
             const { translatedSentences } = await response.json();
             if (translatedSentences && translatedSentences.length > 0) {
-                dom.newChineseText.value = translatedSentences[0].chinese_translation;
-                dom.addChineseGroup.style.display = 'block';
-                dom.addSentenceSubmitBtn.textContent = '确认保存';
-                dom.addSentenceForm.dataset.state = 'confirm';
+                document.getElementById('new-chinese-text').value = translatedSentences[0].chinese_translation;
+                document.getElementById('add-chinese-group').style.display = 'block';
+                submitBtn.textContent = '确认保存';
+                form.dataset.state = 'confirm';
             } else {
                 throw new Error('AI未能返回翻译。');
             }
         } catch (error) {
             console.error('获取翻译失败:', error);
-            dom.addSentenceError.textContent = `翻译失败: ${error.message}`;
-            dom.addSentenceSubmitBtn.textContent = '获取翻译';
+            errorEl.textContent = `翻译失败: ${error.message}`;
+            submitBtn.textContent = '获取翻译';
         } finally {
-            dom.addSentenceSubmitBtn.disabled = false;
+            submitBtn.disabled = false;
         }
     } else if (state === 'confirm') {
-        const chineseText = dom.newChineseText.value.trim();
+        const chineseText = document.getElementById('new-chinese-text').value.trim();
         if (!chineseText) {
-            dom.addSentenceError.textContent = '中文翻译不能为空。';
+            errorEl.textContent = '中文翻译不能为空。';
             return;
         }
-        dom.addSentenceSubmitBtn.disabled = true;
-        dom.addSentenceSubmitBtn.textContent = '保存中...';
+        submitBtn.disabled = true;
+        submitBtn.textContent = '保存中...';
 
         const { error } = await supabase.from('sentences').insert([{ 
             spanish_text: spanishText, 
@@ -319,11 +284,11 @@ async function handleAddSentence(e) {
         }]);
 
         if (error) {
-            dom.addSentenceError.textContent = `保存失败: ${error.message}`;
-            dom.addSentenceSubmitBtn.disabled = false;
-            dom.addSentenceSubmitBtn.textContent = '确认保存';
+            errorEl.textContent = `保存失败: ${error.message}`;
+            submitBtn.disabled = false;
+            submitBtn.textContent = '确认保存';
         } else {
-            dom.addSentenceModal.style.display = 'none';
+            document.getElementById('addSentenceModal').style.display = 'none';
             await showCustomConfirm('添加成功！', false);
             setTimeout(() => document.getElementById('confirmModal').style.display = 'none', 1000);
             await fetchInitialData();
@@ -338,17 +303,17 @@ async function handleAddSentence(e) {
 function openEditSentenceModal() {
     if (currentFilteredSentences.length === 0) return;
     const sentenceToEdit = currentFilteredSentences[sentenceIndex];
-    dom.editSentenceId.value = sentenceToEdit.id;
-    dom.editSpanishText.value = sentenceToEdit.spanish_text;
-    dom.editChineseText.value = sentenceToEdit.chinese_translation;
-    dom.editSentenceModal.style.display = 'flex';
+    document.getElementById('edit-sentence-id').value = sentenceToEdit.id;
+    document.getElementById('edit-spanish-text').value = sentenceToEdit.spanish_text;
+    document.getElementById('edit-chinese-text').value = sentenceToEdit.chinese_translation;
+    document.getElementById('editSentenceModal').style.display = 'flex';
 }
 
 async function handleEditSentence(e) {
     e.preventDefault();
-    const id = dom.editSentenceId.value;
-    const spanishText = dom.editSpanishText.value.trim();
-    const chineseText = dom.editChineseText.value.trim();
+    const id = document.getElementById('edit-sentence-id').value;
+    const spanishText = document.getElementById('edit-spanish-text').value.trim();
+    const chineseText = document.getElementById('edit-chinese-text').value.trim();
     if (!spanishText || !chineseText) {
         await showCustomConfirm('西班牙语和中文翻译均不能为空！');
         return;
@@ -357,7 +322,7 @@ async function handleEditSentence(e) {
     if (error) {
         await showCustomConfirm(`更新失败: ${error.message}`);
     } else {
-        dom.editSentenceModal.style.display = 'none';
+        document.getElementById('editSentenceModal').style.display = 'none';
         await showCustomConfirm('更新成功！', false);
         setTimeout(() => document.getElementById('confirmModal').style.display = 'none', 1000);
         await fetchInitialData();
@@ -411,7 +376,6 @@ async function readSentenceWordByWord() {
     }
 }
 
-// WORD Functions
 async function toggleWordMastered() {
     if (currentFilteredWords.length === 0) return;
     const word = currentFilteredWords[wordIndex];
@@ -443,75 +407,84 @@ function showSentencesForWord() {
     } else {
         dom.sentenceListContent.innerHTML = '<p>暂无更多例句。</p>';
     }
-    dom.sentenceListModal.style.display = 'flex';
+    document.getElementById('sentenceListModal').style.display = 'flex';
 }
 
 // --- 7. Event Listener Setup ---
 function setupEventListeners() {
-    // --- 【修改】模式切换器现在会保存用户的选择 ---
+    // 页面内筛选菜单的交互
+    if (dom.filterMenuBtn && dom.filterPanel) {
+        dom.filterMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dom.filterPanel.classList.toggle('is-visible');
+        });
+    }
+
+    // 全局点击事件，用于关闭打开的面板
+    document.addEventListener('click', (e) => {
+        // 关闭头部用户下拉菜单 (由 utils.js 的 initializeDropdowns 处理)
+
+        // 关闭筛选面板
+        if (
+            dom.filterPanel &&
+            dom.filterPanel.classList.contains('is-visible') &&
+            !dom.filterMenuBtn.contains(e.target) &&
+            !dom.filterPanel.contains(e.target)
+        ) {
+            dom.filterPanel.classList.remove('is-visible');
+        }
+    });
+
+    // 学习模式切换器
     dom.studyModeSwitcher.addEventListener('click', (e) => {
         if (e.target.tagName !== 'BUTTON' || e.target.classList.contains('active')) return;
         
         currentStudyMode = e.target.dataset.mode;
-
-        // --- 新增代码开始 ---
-        supabase
-            .from('profiles')
-            .update({ last_study_mode: currentStudyMode })
-            .eq('id', currentUser.id)
-            .then(); // 发送请求，无需等待
-        // --- 新增代码结束 ---
+        supabase.from('profiles').update({ last_study_mode: currentStudyMode }).eq('id', currentUser.id).then();
         
-        dom.studyModeSwitcher.querySelector('.active').classList.remove('active');
-        e.target.classList.add('active');
+        const activeButton = dom.studyModeSwitcher.querySelector(`[data-mode="${currentStudyMode}"]`);
+        if (activeButton && !activeButton.classList.contains('active')) {
+            dom.studyModeSwitcher.querySelector('.active')?.classList.remove('active');
+            activeButton.classList.add('active');
+        }
+        
         updatePillPosition();
         renderUI();
     });
 
-    // Actions Menu
-    dom.actionsMenuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dom.actionsPanel.classList.toggle('is-visible');
-    });
-    document.addEventListener('click', (e) => {
-        if (!dom.actionsMenuBtn.contains(e.target) && !dom.actionsPanel.contains(e.target)) {
-            dom.actionsPanel.classList.remove('is-visible');
-        }
-    });
-
-    // Sentence Filter Listeners
+    // 句子筛选器
     dom.sentenceStatusFilterGroup.addEventListener('click', (e) => {
         if (e.target.tagName !== 'BUTTON') return;
         sentenceStatusFilter = e.target.dataset.value;
         dom.sentenceStatusFilterGroup.querySelector('.active').classList.remove('active');
         e.target.classList.add('active');
-        renderUI();
+        renderSentenceCard();
     });
     dom.sentenceSortOrderGroup.addEventListener('click', (e) => {
         if (e.target.tagName !== 'BUTTON') return;
         sentenceSortOrder = e.target.dataset.value;
         dom.sentenceSortOrderGroup.querySelector('.active').classList.remove('active');
         e.target.classList.add('active');
-        renderUI();
+        renderSentenceCard();
     });
     
-    // Word Filter Listeners
+    // 单词筛选器
     dom.wordStatusFilterGroup.addEventListener('click', (e) => {
         if (e.target.tagName !== 'BUTTON') return;
         wordStatusFilter = e.target.dataset.value;
         dom.wordStatusFilterGroup.querySelector('.active').classList.remove('active');
         e.target.classList.add('active');
-        renderUI();
+        renderWordCard();
     });
     dom.wordSortOrderGroup.addEventListener('click', (e) => {
         if (e.target.tagName !== 'BUTTON') return;
         wordSortOrder = e.target.dataset.value;
         dom.wordSortOrderGroup.querySelector('.active').classList.remove('active');
         e.target.classList.add('active');
-        renderUI();
+        renderWordCard();
     });
 
-    // Card Navigation & Interaction - MODIFIED TO SAVE PROGRESS
+    // 卡片导航
     dom.sentenceCard.addEventListener('click', (e) => {
         if (e.target.closest('.card-actions, .card-footer') || e.target.classList.contains('highlight-word')) return;
         const rect = dom.sentenceCard.getBoundingClientRect();
@@ -529,7 +502,7 @@ function setupEventListeners() {
                     .from('profiles')
                     .update({ last_sentence_id: currentSentence.id, updated_at: new Date() })
                     .eq('id', currentUser.id)
-                    .then(); // then() 用于触发请求，我们无需等待它完成
+                    .then();
             }
         }
     });
@@ -551,20 +524,19 @@ function setupEventListeners() {
                     .from('profiles')
                     .update({ last_word_id: currentWord.id, updated_at: new Date() })
                     .eq('id', currentUser.id)
-                    .then(); // 同样，无需等待
+                    .then();
             }
         }
     });
     
-    // Listeners for Add, Edit, Delete
+    // 其他按钮
     dom.addSentenceLink.addEventListener('click', () => {
         resetAddSentenceModal();
-        dom.addSentenceModal.style.display = 'flex';
+        document.getElementById('addSentenceModal').style.display = 'flex';
     });
     dom.editSentenceLink.addEventListener('click', openEditSentenceModal);
     dom.deleteSentenceLink.addEventListener('click', deleteCurrentSentence);
     
-    // Sentence-specific listeners
     dom.masteredToggle.addEventListener('click', (e) => { e.stopPropagation(); toggleSentenceMastered(); });
     dom.sentenceSpanishText.addEventListener('click', (event) => { if (event.target.classList.contains('highlight-word')) { event.stopPropagation(); readText(event.target.dataset.word, false, event.target); } });
     dom.sentenceReadBtn.addEventListener('click', () => readText(currentFilteredSentences[sentenceIndex]?.spanish_text, false, dom.sentenceReadBtn));
@@ -572,59 +544,43 @@ function setupEventListeners() {
     dom.sentenceWordReadBtn.addEventListener('click', readSentenceWordByWord);
     dom.sentenceAiExplainBtn.addEventListener('click', getAiExplanation);
 
-    // Word-specific listeners
     dom.wordMasteredToggle.addEventListener('click', (e) => { e.stopPropagation(); toggleWordMastered(); });
     dom.wordFrequencyBadge.addEventListener('click', (e) => { e.stopPropagation(); showSentencesForWord(); });
     dom.wordReadBtn.addEventListener('click', () => readText(currentFilteredWords[wordIndex]?.spanish_word, false, dom.wordReadBtn));
     dom.wordSlowReadBtn.addEventListener('click', () => readText(currentFilteredWords[wordIndex]?.spanish_word, true, dom.wordSlowReadBtn));
 
-    // Modal & Form listeners
-    dom.addSentenceForm.addEventListener('submit', handleAddSentence);
-    dom.cancelAddBtn.addEventListener('click', () => dom.addSentenceModal.style.display = 'none');
-    dom.editSentenceForm.addEventListener('submit', handleEditSentence);
-    dom.cancelEditBtn.addEventListener('click', () => dom.editSentenceModal.style.display = 'none');
-    dom.aiExplanationCloseBtn.addEventListener('click', () => dom.aiExplanationModal.style.display = 'none');
-    dom.sentenceListCloseBtn.addEventListener('click', () => dom.sentenceListModal.style.display = 'none');
+    // 弹窗表单
+    document.getElementById('add-sentence-form').addEventListener('submit', handleAddSentence);
+    document.getElementById('cancel-add-btn').addEventListener('click', () => document.getElementById('addSentenceModal').style.display = 'none');
+    
+    document.getElementById('edit-sentence-form').addEventListener('submit', handleEditSentence);
+    document.getElementById('cancel-edit-btn').addEventListener('click', () => document.getElementById('editSentenceModal').style.display = 'none');
+    
+    document.getElementById('aiExplanationCloseBtn').addEventListener('click', () => document.getElementById('aiExplanationModal').style.display = 'none');
+    document.getElementById('sentenceListCloseBtn').addEventListener('click', () => document.getElementById('sentenceListModal').style.display = 'none');
 }
 
 // --- 8. Page Initialization ---
-// 【修改】此函数已完全重写，以加载并应用学习模式和学习进度
 async function initializePage() {
     currentUser = await protectPage();
     if (!currentUser) return;
     
     await initializeHeader(currentUser);
+    initializeDropdowns();
+    
     const success = await fetchInitialData();
 
     if (success) {
-        // --- 修改/新增代码开始 ---
-        
-        // 1. 从数据库获取包括学习模式在内的所有进度
-        const { data: profile, error } = await supabase
+        const { data: profile } = await supabase
             .from('profiles')
             .select('last_sentence_id, last_word_id, last_study_mode')
             .eq('id', currentUser.id)
             .single();
 
-        // 2. 恢复上次的学习模式
-        if (profile && profile.last_study_mode === 'words') {
-            currentStudyMode = 'words';
-            // 更新UI以匹配模式
-            dom.studyModeSwitcher.querySelector('[data-mode="sentences"]').classList.remove('active');
-            dom.studyModeSwitcher.querySelector('[data-mode="words"]').classList.add('active');
-        }
-
-        // 3. 恢复上次的学习进度（句子或单词）
-        const targetSentenceId = sessionStorage.getItem('targetSentenceId');
-        if (targetSentenceId) {
-            // 优先处理从 manage.html 的跳转
-            const targetIndex = allSentences.findIndex(s => s.id == targetSentenceId);
-            if (targetIndex !== -1) {
-                sentenceIndex = targetIndex;
+        if (profile) {
+            if (profile.last_study_mode === 'words') {
+                currentStudyMode = 'words';
             }
-            sessionStorage.removeItem('targetSentenceId');
-        } else if (profile) {
-            // 如果没有跳转，则恢复上次的学习进度
             if (profile.last_sentence_id) {
                 const lastSentenceIndex = allSentences.findIndex(s => s.id === profile.last_sentence_id);
                 if (lastSentenceIndex !== -1) sentenceIndex = lastSentenceIndex;
@@ -635,13 +591,26 @@ async function initializePage() {
             }
         }
         
-        // --- 修改/新增代码结束 ---
+        const targetSentenceId = sessionStorage.getItem('targetSentenceId');
+        if (targetSentenceId) {
+            const targetIndex = allSentences.findIndex(s => s.id == targetSentenceId);
+            if (targetIndex !== -1) {
+                sentenceIndex = targetIndex;
+                currentStudyMode = 'sentences'; 
+            }
+            sessionStorage.removeItem('targetSentenceId');
+        }
+        
+        const activeButton = dom.studyModeSwitcher.querySelector(`[data-mode="${currentStudyMode}"]`);
+        if (activeButton && !activeButton.classList.contains('active')) {
+            dom.studyModeSwitcher.querySelector('.active')?.classList.remove('active');
+            activeButton.classList.add('active');
+        }
 
         setupEventListeners();
-        renderUI(); // renderUI会根据已恢复的 currentStudyMode 显示正确的界面
+        renderUI();
         updatePillPosition();
     }
 }
-
 
 initializePage();

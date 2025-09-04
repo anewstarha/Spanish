@@ -2,7 +2,8 @@
 
 import { supabase } from './config.js';
 import { protectPage, initializeHeader } from './auth.js';
-import { showCustomConfirm, generateAndUpdateHighFrequencyWords, initializeDrawerNav } from './utils.js';
+// 【修改】导入新函数，移除旧函数
+import { showCustomConfirm, generateAndUpdateHighFrequencyWords, initializeDropdowns } from './utils.js';
 
 let currentUser = null;
 let allSentences = [];
@@ -135,7 +136,7 @@ async function initializePage() {
     await initializeHeader(currentUser);
     await fetchSentences();
     setupEventListeners();
-    initializeDrawerNav();
+    initializeDropdowns(); // 【修改】替换掉旧的 initializeDrawerNav()
 }
 
 initializePage();

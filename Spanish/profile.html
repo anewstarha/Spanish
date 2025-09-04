@@ -9,36 +9,31 @@
 </head>
 <body>
     <header>
-        <div class="container">
-            <button id="hamburger-btn" class="hamburger-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-            </button>
-            <a href="index.html" class="logo">西班牙语学习助手</a>
-            <nav>
-                <a href="profile.html" id="profile-link" class="btn btn-header-profile">
-                    </a>
+        <div class="container header-container">
+            <a href="index.html" class="logo">
+                <svg class="back-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><polyline points="12 19 5 12 12 5"></polyline></svg>
+                <span>西班牙语学习助手</span>
+            </a>
+            <nav class="header-actions">
+                <div class="dropdown-container">
+                    <button class="icon-btn-header user-avatar-btn" id="user-menu-btn" title="用户菜单">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    </button>
+                    <div class="dropdown-menu" id="user-menu">
+                        <div class="dropdown-header" id="user-menu-greeting">你好, ...</div>
+                        <a href="profile.html" class="dropdown-item">个人中心</a>
+                        <a href="manage.html" class="dropdown-item">内容管理</a>
+                        <hr class="dropdown-divider">
+                        <a href="#" class="dropdown-item" id="logout-button">退出登录</a>
+                    </div>
+                </div>
             </nav>
         </div>
     </header>
 
-    <div id="sidebar-overlay" class="sidebar-overlay"></div>
-
-    <div class="admin-layout">
-        <aside id="sidebar" class="sidebar">
-            <div class="sidebar-header">
-                <h3>设置中心</h3>
-                <button id="sidebar-close-btn" class="sidebar-close-btn">&times;</button>
-            </div>
-            <a href="index.html" class="sidebar-link back-to-study">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><polyline points="12 19 5 12 12 5"></polyline></svg>
-                返回学习
-            </a>
-            <hr>
-            <a href="profile.html" class="sidebar-link active">用户信息</a>
-            <a href="manage.html" class="sidebar-link">内容管理</a>
-        </aside>
-        <main id="main-content" class="admin-content">
-            <div class="card auth-card" style="margin: 0 auto;">
+    <main id="main-content">
+        <div class="container page-container">
+             <div class="card auth-card">
                 <h2 class="auth-title">用户信息</h2>
                 <form id="profile-form" class="modal-form">
                     <div class="form-group">
@@ -54,11 +49,10 @@
                         <button type="submit" class="btn btn-primary btn-full-width">保存更改</button>
                     </div>
                 </form>
-                <hr style="border: none; border-top: 1px solid var(--border-color); margin: 2rem 0;">
-                <button id="logout-button-profile" class="btn btn-danger">退出登录</button>
+                <button id="logout-button-profile" class="btn btn-danger btn-full-width" style="margin-top: 1.5rem;">退出登录</button>
             </div>
-        </main>
         </div>
+    </main>
 
     <script type="module" src="js/profile-main.js"></script>
 </body>

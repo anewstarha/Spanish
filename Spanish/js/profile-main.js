@@ -1,8 +1,9 @@
 // js/profile-main.js
 
 import { supabase } from './config.js';
-import { protectPage, initializeHeader, handleSignOut } from './auth.js';
-import { initializeDrawerNav } from './utils.js';
+import { protectPage, initializeHeader } from './auth.js';
+// 【修改】导入新函数
+import { initializeDropdowns } from './utils.js';
 
 let currentUser = null;
 
@@ -11,7 +12,7 @@ const dom = {
     emailInput: document.getElementById('profile-email'),
     nicknameInput: document.getElementById('profile-nickname'),
     messageText: document.getElementById('message-text'),
-    logoutButton: document.getElementById('logout-button-profile'),
+    // 【修改】移除了旧的 logout-button-profile
 };
 
 async function loadUserProfile() {
@@ -48,6 +49,7 @@ async function handleProfileUpdate(event) {
     } else {
         dom.messageText.style.color = 'var(--success-color)';
         dom.messageText.textContent = '更新成功！';
+        // 重新初始化头部以显示新昵称
         await initializeHeader(currentUser);
         setTimeout(() => { dom.messageText.textContent = ''; }, 1500);
     }
@@ -55,9 +57,7 @@ async function handleProfileUpdate(event) {
 
 function setupEventListeners() {
     dom.profileForm.addEventListener('submit', handleProfileUpdate);
-    dom.logoutButton.addEventListener('click', () => {
-        handleSignOut();
-    });
+    // 【修改】移除了旧的 logoutButton 事件监听
 }
 
 async function initializePage() {
@@ -67,7 +67,7 @@ async function initializePage() {
     await initializeHeader(currentUser);
     await loadUserProfile();
     setupEventListeners();
-    initializeDrawerNav();
+    initializeDropdowns(); // 【修改】激活新头部菜单功能
 }
 
 initializePage();

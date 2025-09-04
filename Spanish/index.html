@@ -9,11 +9,23 @@
 </head>
 <body id="study-page">
     <header>
-        <div class="container">
-            <a href="index.html" class="logo">西班牙语学习助手</a>
-            <nav>
-                <a href="profile.html" id="profile-link" class="btn btn-header-profile">
-                    </a>
+        <div class="container header-container">
+            <a href="index.html" class="logo">
+                <span>西班牙语学习助手</span>
+            </a>
+            <nav class="header-actions">
+                <div class="dropdown-container">
+                    <button class="icon-btn-header user-avatar-btn" id="user-menu-btn" title="用户菜单">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    </button>
+                    <div class="dropdown-menu" id="user-menu">
+                        <div class="dropdown-header" id="user-menu-greeting">你好, ...</div>
+                        <a href="profile.html" class="dropdown-item">个人中心</a>
+                        <a href="manage.html" class="dropdown-item">内容管理</a>
+                        <hr class="dropdown-divider">
+                        <a href="#" class="dropdown-item" id="logout-button">退出登录</a>
+                    </div>
+                </div>
             </nav>
         </div>
     </header>
@@ -29,12 +41,12 @@
                             <button data-mode="words">单词学习</button>
                         </div>
 
-                        <div class="actions-menu-container">
-                            <button id="actions-menu-btn" class="actions-menu-btn" title="筛选与排序">
+                        <div class="filter-container">
+                            <button class="icon-btn-header" id="filter-menu-btn" title="筛选与排序">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
                             </button>
-                            <div id="actions-panel" class="actions-panel">
-                                <div id="sentence-filters" class="control-group-wrapper">
+                            <div class="actions-panel" id="filter-panel">
+                                 <div id="sentence-filters" class="control-group-wrapper">
                                     <div class="control-group">
                                         <label class="control-label">筛选：</label>
                                         <div id="status-filter-group" class="segmented-control">
@@ -55,8 +67,8 @@
                                     <div class="control-group">
                                         <label class="control-label">筛选：</label>
                                         <div id="word-status-filter-group" class="segmented-control">
-                                            <button data-value="all" class="active">所有</button>
-                                            <button data-value="unmastered">未掌握</button>
+                                            <button data-value="all">所有</button>
+                                            <button data-value="unmastered" class="active">未掌握</button>
                                             <button data-value="mastered">已掌握</button>
                                         </div>
                                     </div>
@@ -68,7 +80,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>

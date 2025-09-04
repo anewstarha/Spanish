@@ -1,5 +1,7 @@
 // js/utils.js
 
+console.log("--- utils.js v2.0 Loaded ---");
+
 import { supabase } from './config.js';
 
 const audio = new Audio();
@@ -21,7 +23,6 @@ function unlockAudio() {
     }
 }
 
-// === 核心改动：优化弹窗交互 ===
 export function showCustomConfirm(message, showButtons = true) {
     return new Promise((resolve) => {
         const confirmModal = document.getElementById('confirmModal');
@@ -37,7 +38,6 @@ export function showCustomConfirm(message, showButtons = true) {
 
         const closeModal = (resolutionValue) => {
             confirmModal.style.display = 'none';
-            // 移除事件监听器，避免内存泄漏
             confirmModal.removeEventListener('click', clickOutsideHandler);
             confirmBtn.removeEventListener('click', confirmHandler);
             cancelBtn.removeEventListener('click', cancelHandler);
@@ -47,19 +47,15 @@ export function showCustomConfirm(message, showButtons = true) {
         const confirmHandler = () => closeModal(true);
         const cancelHandler = () => closeModal(false);
         
-        // 如果点击的是模态框背景（而不是内容区域），则关闭
         const clickOutsideHandler = (event) => {
             if (event.target === confirmModal) {
-                // 对于无按钮的通知，点击外部关闭；对于有按钮的对话框，则视为取消
                 closeModal(!showButtons); 
             }
         };
 
         if (!showButtons) {
-            // 无按钮通知：点击任意位置关闭
             confirmModal.addEventListener('click', clickOutsideHandler);
         } else {
-            // 有按钮对话框：绑定按钮事件
             confirmBtn.addEventListener('click', confirmHandler);
             cancelBtn.addEventListener('click', cancelHandler);
         }
@@ -167,27 +163,25 @@ export async function generateAndUpdateHighFrequencyWords(userId) {
     }
 }
 
-export function initializeDrawerNav() {
-    const hamburgerBtn = document.getElementById('hamburger-btn');
-    const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
+export function initializeDropdowns() {
+    const dropdownContainers = document.querySelectorAll('.dropdown-container');
 
-    if (!hamburgerBtn || !sidebar || !overlay || !sidebarCloseBtn) {
-        return;
-    }
+    dropdownContainers.forEach(container => {
+        const button = container.querySelector('button');
+        const menu = container.querySelector('.dropdown-menu');
 
-    const openSidebar = () => {
-        sidebar.classList.add('is-open');
-        overlay.classList.add('is-open');
-    };
+        if (!button || !menu) return;
 
-    const closeSidebar = () => {
-        sidebar.classList.remove('is-open');
-        overlay.classList.remove('is-open');
-    };
-
-    hamburgerBtn.addEventListener('click', openSidebar);
-    sidebarCloseBtn.addEventListener('click', closeSidebar);
-    overlay.addEventListener('click', closeSidebar);
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            // 关闭其他所有已打开的菜单
+            document.querySelectorAll('.dropdown-menu.is-visible').forEach(openMenu => {
+                if (openMenu !== menu) {
+                    openMenu.classList.remove('is-visible');
+                }
+            });
+            // 切换当前点击的菜单
+            menu.classList.toggle('is-visible');
+        });
+    });
 }
