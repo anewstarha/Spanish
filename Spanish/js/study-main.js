@@ -448,15 +448,23 @@ function showSentencesForWord() {
 
 // --- 7. Event Listener Setup ---
 function setupEventListeners() {
-    // Mode Switcher
+    // --- 【修改】模式切换器现在会保存用户的选择 ---
     dom.studyModeSwitcher.addEventListener('click', (e) => {
         if (e.target.tagName !== 'BUTTON' || e.target.classList.contains('active')) return;
+        
         currentStudyMode = e.target.dataset.mode;
+
+        // --- 新增代码开始 ---
+        supabase
+            .from('profiles')
+            .update({ last_study_mode: currentStudyMode })
+            .eq('id', currentUser.id)
+            .then(); // 发送请求，无需等待
+        // --- 新增代码结束 ---
+        
         dom.studyModeSwitcher.querySelector('.active').classList.remove('active');
         e.target.classList.add('active');
         updatePillPosition();
-        sentenceIndex = 0;
-        wordIndex = 0;
         renderUI();
     });
 
@@ -503,25 +511,52 @@ function setupEventListeners() {
         renderUI();
     });
 
-    // Card Navigation & Interaction
+    // Card Navigation & Interaction - MODIFIED TO SAVE PROGRESS
     dom.sentenceCard.addEventListener('click', (e) => {
         if (e.target.closest('.card-actions, .card-footer') || e.target.classList.contains('highlight-word')) return;
         const rect = dom.sentenceCard.getBoundingClientRect();
+        const oldIndex = sentenceIndex;
+        
         sentenceIndex = e.clientX < (rect.left + rect.width / 2)
             ? (sentenceIndex > 0 ? sentenceIndex - 1 : currentFilteredSentences.length - 1)
             : (sentenceIndex < currentFilteredSentences.length - 1 ? sentenceIndex + 1 : 0);
-        renderSentenceCard();
+        
+        if (oldIndex !== sentenceIndex) {
+            renderSentenceCard();
+            const currentSentence = currentFilteredSentences[sentenceIndex];
+            if (currentSentence) {
+                supabase
+                    .from('profiles')
+                    .update({ last_sentence_id: currentSentence.id, updated_at: new Date() })
+                    .eq('id', currentUser.id)
+                    .then(); // then() 用于触发请求，我们无需等待它完成
+            }
+        }
     });
+
     dom.wordCard.addEventListener('click', (e) => {
         if (e.target.closest('.card-actions, .card-footer') || e.target.id === 'word-frequency-badge') return;
         const rect = dom.wordCard.getBoundingClientRect();
+        const oldIndex = wordIndex;
+        
         wordIndex = e.clientX < (rect.left + rect.width / 2)
             ? (wordIndex > 0 ? wordIndex - 1 : currentFilteredWords.length - 1)
             : (wordIndex < currentFilteredWords.length - 1 ? wordIndex + 1 : 0);
-        renderWordCard();
+            
+        if (oldIndex !== wordIndex) {
+            renderWordCard();
+            const currentWord = currentFilteredWords[wordIndex];
+            if (currentWord) {
+                supabase
+                    .from('profiles')
+                    .update({ last_word_id: currentWord.id, updated_at: new Date() })
+                    .eq('id', currentUser.id)
+                    .then(); // 同样，无需等待
+            }
+        }
     });
     
-    // BUG FIX: Re-add listeners for Add, Edit, Delete
+    // Listeners for Add, Edit, Delete
     dom.addSentenceLink.addEventListener('click', () => {
         resetAddSentenceModal();
         dom.addSentenceModal.style.display = 'flex';
@@ -553,19 +588,60 @@ function setupEventListeners() {
 }
 
 // --- 8. Page Initialization ---
+// 【修改】此函数已完全重写，以加载并应用学习模式和学习进度
 async function initializePage() {
     currentUser = await protectPage();
     if (!currentUser) return;
     
     await initializeHeader(currentUser);
     const success = await fetchInitialData();
+
     if (success) {
-        // Must be called after data is fetched but before first render
+        // --- 修改/新增代码开始 ---
+        
+        // 1. 从数据库获取包括学习模式在内的所有进度
+        const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('last_sentence_id, last_word_id, last_study_mode')
+            .eq('id', currentUser.id)
+            .single();
+
+        // 2. 恢复上次的学习模式
+        if (profile && profile.last_study_mode === 'words') {
+            currentStudyMode = 'words';
+            // 更新UI以匹配模式
+            dom.studyModeSwitcher.querySelector('[data-mode="sentences"]').classList.remove('active');
+            dom.studyModeSwitcher.querySelector('[data-mode="words"]').classList.add('active');
+        }
+
+        // 3. 恢复上次的学习进度（句子或单词）
+        const targetSentenceId = sessionStorage.getItem('targetSentenceId');
+        if (targetSentenceId) {
+            // 优先处理从 manage.html 的跳转
+            const targetIndex = allSentences.findIndex(s => s.id == targetSentenceId);
+            if (targetIndex !== -1) {
+                sentenceIndex = targetIndex;
+            }
+            sessionStorage.removeItem('targetSentenceId');
+        } else if (profile) {
+            // 如果没有跳转，则恢复上次的学习进度
+            if (profile.last_sentence_id) {
+                const lastSentenceIndex = allSentences.findIndex(s => s.id === profile.last_sentence_id);
+                if (lastSentenceIndex !== -1) sentenceIndex = lastSentenceIndex;
+            }
+            if (profile.last_word_id) {
+                const lastWordIndex = allWords.findIndex(w => w.id === profile.last_word_id);
+                if (lastWordIndex !== -1) wordIndex = lastWordIndex;
+            }
+        }
+        
+        // --- 修改/新增代码结束 ---
+
         setupEventListeners();
-        renderUI();
-        // Call this once at the start to set initial position
+        renderUI(); // renderUI会根据已恢复的 currentStudyMode 显示正确的界面
         updatePillPosition();
     }
 }
+
 
 initializePage();

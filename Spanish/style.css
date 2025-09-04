@@ -669,6 +669,22 @@ main {
     position: relative;
 }
 
+/* 【新增】为“新增句子”弹窗内的文字链接添加样式 */
+.modal-secondary-action {
+    text-align: center;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: var(--muted-color);
+}
+.modal-secondary-action a {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+.modal-secondary-action a:hover {
+    text-decoration: none;
+}
+
+
 #aiExplanationModal .modal-content, #sentenceListModal .modal-content {
     max-width: 700px;
     text-align: left;
@@ -1156,41 +1172,17 @@ nav {
 .actions-panel .control-group {
     justify-content: space-between;
 }
-.actions-panel hr {
-    border: none;
-    border-top: 1px solid var(--border-color);
-    margin: 1rem 0;
-}
-/* === Final UI Fixes for Alignment and Z-Index === */
 
-/* 第一步：建立一个600px宽的居中“舞台”
-  (这段代码您文件中应该已经存在，请确保它没有被删除)
-*/
+/* === Final UI Fixes for Alignment and Z-Index === */
 #study-page .main-section {
-    /* 核心保留 */
     max-width: 600px;
     margin-left: auto;
     margin-right: auto;
-    
-    /* 关键新增下面这一行 */
     width: 100%;
-    
-    /* 删除我之前建议添加的这两行 */
-    /* display: flex; */
-    /* flex-direction: column; */
 }
 
-/* 第二步：让控制栏（“尺子”）撑满这个舞台
-  (这是最关键的修改)
-*/
 .study-controls-v2 {
-    /* 请在 .study-controls-v2 规则中找到并合并以下样式。
-      如果您没有这个规则，请直接添加。
-      核心是确保 width: 100% 存在。
-    */
-    width: 100%; /* <-- 核心修改：添加此行以拉伸容器 */
-    
-    /* 以下是该规则已有的其他样式，请保留 */
+    width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1198,4 +1190,37 @@ nav {
     padding: 0.5rem 0;
     margin-bottom: 1.5rem;
     z-index: 10;
+}
+/* === 响应式头部重叠问题修复 === */
+@media (max-width: 768px) {
+  
+  /* 1. 重新定义容器的布局方式 */
+  header .container {
+    flex-direction: row; /* 强制所有头部元素保持水平排列 */
+    justify-content: space-between; /* 将两端的元素推向边缘，中间的元素自动居中 */
+    gap: 0.5rem; /* 缩小元素间距 */
+    padding: 0 0.5rem; /* 稍微增加左右内边距，避免元素贴边 */
+  }
+
+  /* 2. 取消Logo的绝对定位，让它回归正常的Flexbox布局 */
+  header .container .logo {
+    position: static; /* 取消 absolute 定位 */
+    transform: none;  /* 移除 transform 效果 */
+    left: auto;       /* 重置 left 属性 */
+    
+    /* 为了在极窄屏幕上能自动缩放，做一些优化 */
+    flex-grow: 0;
+    flex-shrink: 1; /* 允许Logo在空间不足时缩小 */
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 3. 优化用户昵称标签，防止文本过长 */
+  .btn-header-profile {
+    flex-shrink: 0; /* 不允许用户标签缩小，保持其基本宽度 */
+    max-width: 150px; /* 限制最大宽度，防止昵称过长时挤压Logo */
+    overflow: hidden;
+    text-overflow: ellipsis; /* 过长的文本显示为... */
+    white-space: nowrap;
+  }
 }

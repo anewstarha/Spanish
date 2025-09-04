@@ -30,8 +30,8 @@
                         </div>
 
                         <div class="actions-menu-container">
-                            <button id="actions-menu-btn" class="actions-menu-btn" title="更多操作">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                            <button id="actions-menu-btn" class="actions-menu-btn" title="筛选与排序">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
                             </button>
                             <div id="actions-panel" class="actions-panel">
                                 <div id="sentence-filters" class="control-group-wrapper">
@@ -68,9 +68,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <hr>
-                                <a href="manage.html" class="btn btn-secondary btn-full-width">批量添加</a>
-                            </div>
+                                </div>
                         </div>
                     </div>
                 </section>
@@ -122,6 +120,9 @@
             <div id="add-spanish-group" class="form-group"><textarea id="new-spanish-text" placeholder="输入西班牙语句子..." required></textarea></div>
             <div id="add-chinese-group" class="form-group" style="display: none;"><textarea id="new-chinese-text" placeholder="AI正在生成翻译..."></textarea></div>
             <p id="add-sentence-error" class="error-text"></p>
+            <p class="modal-secondary-action">
+                需要一次性添加多条？ <a href="manage.html">点击这里批量添加</a>
+            </p>
             <div class="modal-buttons">
                 <button type="submit" id="add-sentence-submit-btn" class="btn btn-primary">获取翻译</button>
                 <button type="button" id="cancel-add-btn" class="btn btn-secondary">取消</button>
