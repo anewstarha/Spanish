@@ -1,16 +1,17 @@
+// js/study-main.js
+
 import { supabase } from './config.js';
 import { protectPage, initializeHeader } from './auth.js';
 import { showCustomConfirm, readText, generateAndUpdateHighFrequencyWords, initializeDropdowns } from './utils.js';
 
-// --- 1. State Management ---
+// --- State Management ---
 let currentUser = null;
 let currentStudyMode = 'sentences';
 let allSentences = [], currentFilteredSentences = [], sentenceIndex = 0, sentenceStatusFilter = 'unmastered', sentenceSortOrder = 'sequential';
 let allWords = [], currentFilteredWords = [], wordIndex = 0, wordStatusFilter = 'unmastered', wordSortOrder = 'frequency';
 let wordTranslationMap = new Map();
 
-// --- 2. DOM Elements ---
-// 【最终修复】恢复了所有对弹窗(Modal)元素的引用
+// --- DOM Elements ---
 const dom = {
     filterMenuBtn: document.getElementById('filter-menu-btn'),
     filterPanel: document.getElementById('filter-panel'),
@@ -58,7 +59,7 @@ const dom = {
     wordSortOrderGroup: document.getElementById('word-sort-order-group'),
 };
 
-// --- 3. Data Fetching ---
+// --- Data Fetching ---
 async function fetchInitialData() {
     dom.emptyMessage.textContent = '加载中...';
     const sentencePromise = supabase.from('sentences').select('*').eq('user_id', currentUser.id).order('id', { ascending: true });
@@ -87,7 +88,7 @@ async function fetchInitialData() {
     return true;
 }
 
-// --- 4. UI Rendering & State Updates ---
+// --- UI Rendering & State Updates ---
 function updatePillPosition() {
     const activeButton = dom.studyModeSwitcher.querySelector('button.active');
     if (activeButton && dom.switcherPill) {
@@ -162,7 +163,7 @@ function renderWordCard() {
     dom.wordMasteredToggle.classList.toggle('mastered', currentWord.mastered);
 }
 
-// --- 5. Filtering and Sorting Logic ---
+// --- Filtering and Sorting Logic ---
 function filterAndSortSentences() {
     let filtered = allSentences;
     if (sentenceStatusFilter === 'unmastered') filtered = allSentences.filter(s => !s.mastered);
@@ -185,7 +186,7 @@ function filterAndSortWords() {
     if (wordIndex >= currentFilteredWords.length) wordIndex = 0;
 }
 
-// --- 6. Core Functionality ---
+// --- Core Functionality ---
 async function toggleSentenceMastered() {
     if (currentFilteredSentences.length === 0) return;
     const sentence = currentFilteredSentences[sentenceIndex];
@@ -428,9 +429,8 @@ function setupEventListeners() {
         });
     }
 
-    // 全局点击事件，用于关闭打开的面板
+    // 【修改】全局点击监听器现在只负责关闭本页面专属的筛选面板
     document.addEventListener('click', (e) => {
-        // 关闭筛选面板
         if (
             dom.filterPanel &&
             dom.filterPanel.classList.contains('is-visible') &&

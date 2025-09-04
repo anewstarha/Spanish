@@ -1,11 +1,10 @@
 // js/utils.js
 
-console.log("--- utils.js v2.0 Loaded ---");
-
 import { supabase } from './config.js';
 
 const audio = new Audio();
 let isAudioUnlocked = false;
+let isGlobalClickListenerAdded = false; // 【修改】新增一个标志位
 
 function unlockAudio() {
     if (isAudioUnlocked) return;
@@ -163,6 +162,7 @@ export async function generateAndUpdateHighFrequencyWords(userId) {
     }
 }
 
+// 【修改】将“点击外部关闭”的逻辑移回到这里，并确保只绑定一次
 export function initializeDropdowns() {
     const dropdownContainers = document.querySelectorAll('.dropdown-container');
 
@@ -174,7 +174,7 @@ export function initializeDropdowns() {
 
         button.addEventListener('click', (event) => {
             event.stopPropagation();
-            // 关闭其他所有已打开的菜单
+            // 在切换当前菜单前，先关闭其他所有已打开的菜单
             document.querySelectorAll('.dropdown-menu.is-visible').forEach(openMenu => {
                 if (openMenu !== menu) {
                     openMenu.classList.remove('is-visible');
@@ -184,4 +184,15 @@ export function initializeDropdowns() {
             menu.classList.toggle('is-visible');
         });
     });
+
+    // 确保这个全局监听器只被添加一次
+    if (!isGlobalClickListenerAdded) {
+        document.addEventListener('click', () => {
+            // 这个监听器很简单：只要在页面任何地方点击，就关闭所有打开的菜单
+            document.querySelectorAll('.dropdown-menu.is-visible').forEach(openMenu => {
+                openMenu.classList.remove('is-visible');
+            });
+        });
+        isGlobalClickListenerAdded = true;
+    }
 }
