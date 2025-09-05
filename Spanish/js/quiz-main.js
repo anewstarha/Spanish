@@ -1,16 +1,18 @@
-// js/quiz-main.js (带有超详细调试日志的版本)
-
 import { supabase } from './config.js';
 import { protectPage, initializeHeader } from './auth.js';
 import { readText, initializeDropdowns } from './utils.js';
 
-// --- State Management & DOM Elements (保持不变) ---
+// --- 1. State Management ---
 let currentUser = null;
 let allSentences = [];
 let allWords = [];
 let quizQuestions = [];
 let wrongAnswers = [];
 let currentQuestionIndex = 0;
+let answeredStates = new Map();
+let autoAdvanceTimer = null; // 【最终修复】声明计时器变量
+
+// --- 2. DOM Elements ---
 const dom = {
     setupView: document.getElementById('quiz-setup'),
     quizView: document.getElementById('quiz-view'),
@@ -19,18 +21,21 @@ const dom = {
     contentTypeSelector: document.getElementById('content-type-selector'),
     scopeSelection: document.getElementById('scope-selection'),
     startQuizBtn: document.getElementById('start-quiz-btn'),
-    questionProgress: document.getElementById('question-progress'),
-    replayAudioBtn: document.getElementById('replay-audio-btn'),
+    questionInstruction: document.getElementById('question-instruction'),
+    playbackControls: document.getElementById('playback-controls'),
+    quizReadBtn: document.getElementById('quiz-read-btn'),
+    quizSlowReadBtn: document.getElementById('quiz-slow-read-btn'),
+    endQuizBtn: document.getElementById('end-quiz-btn'),
     questionContent: document.getElementById('question-content'),
     feedbackContainer: document.getElementById('feedback-container'),
-    nextQuestionBtn: document.getElementById('next-question-btn'),
+    progressBarContainer: document.getElementById('progress-bar-container'),
     scoreText: document.getElementById('score-text'),
     wrongAnswersList: document.getElementById('wrong-answers-list'),
     retestWrongBtn: document.getElementById('retest-wrong-btn'),
+    newQuizBtn: document.getElementById('new-quiz-btn'),
 };
 
-// --- Core Logic ---
-
+// --- 3. Core Logic ---
 async function fetchAllData() {
     const { data: sentences, error: sError } = await supabase.from('sentences').select('*').eq('user_id', currentUser.id);
     if (sError) console.error('Error fetching sentences', sError);
@@ -46,10 +51,6 @@ async function loadStats() {
     const contentType = dom.contentTypeSelector.querySelector('.active').dataset.type;
     const sourceData = contentType === 'sentences' ? allSentences : allWords;
     
-    // 【调试】打印出用于统计的源数据
-    console.log(`[DEBUG] 1. 源数据 (sourceData) for "${contentType}":`, JSON.parse(JSON.stringify(sourceData)));
-
-
     if (sourceData.length === 0) {
         dom.scopeSelection.innerHTML = `<p class="muted-text">您还没有添加任何${contentType === 'sentences' ? '句子' : '单词'}，请先去学习页面添加。</p>`;
         return;
@@ -57,9 +58,9 @@ async function loadStats() {
     
     const { data: attempts, error } = await supabase
         .from('quiz_attempts')
-        .select('item_id, is_correct')
+        .select('*')
         .eq('user_id', currentUser.id)
-        .eq('item_type', contentType)
+        .eq('item_type', contentType === 'sentences' ? 'sentence' : 'word')
         .order('attempted_at', { ascending: true });
 
     if (error) {
@@ -68,35 +69,26 @@ async function loadStats() {
         return;
     }
 
-    // 【调试】打印出从数据库获取的原始答题记录
-    console.log('[DEBUG] 2. 从数据库获取的原始答题记录 (attempts):', JSON.parse(JSON.stringify(attempts)));
-
     const testedIds = new Map();
     attempts.forEach(attempt => {
-        const key = String(attempt.item_id);
-        testedIds.set(key, attempt.is_correct);
-        // 【调试】打印正在存入Map的每一个键
-        console.log(`[DEBUG] 3. 正在存入Map: key='${key}' (type: ${typeof key}), value=${attempt.is_correct}`);
+        testedIds.set(String(attempt.item_id), attempt.is_correct);
     });
 
-    const stats = { untested: [], correct: [], incorrect: [] };
+    const stats = {
+        untested: [],
+        correct: [],
+        incorrect: []
+    };
 
     sourceData.forEach(item => {
-        const keyToCheck = String(item.id);
-        const hasBeenTested = testedIds.has(keyToCheck);
-        // 【调试】打印正在检查的每一个键，以及检查结果
-        console.log(`[DEBUG] 4. 正在检查 item.id='${keyToCheck}' (type: ${typeof keyToCheck})... 是否在Map中? -> ${hasBeenTested}`);
-
-        if (!hasBeenTested) {
+        if (!testedIds.has(String(item.id))) {
             stats.untested.push(item);
-        } else if (testedIds.get(keyToCheck)) {
+        } else if (testedIds.get(String(item.id))) {
             stats.correct.push(item);
         } else {
             stats.incorrect.push(item);
         }
     });
-
-    console.log('[DEBUG] 5. 最终统计结果:', stats);
 
     dom.scopeSelection.innerHTML = `
         <label class="scope-option">
@@ -114,16 +106,15 @@ async function loadStats() {
     `;
 }
 
-
 function generateQuizQuestions() {
     const contentType = dom.contentTypeSelector.querySelector('.active').dataset.type;
     const sourceData = contentType === 'sentences' ? allSentences : allWords;
     const selectedScopes = Array.from(dom.setupForm.querySelectorAll('input[name="scope"]:checked')).map(cb => cb.value);
 
     supabase.from('quiz_attempts')
-        .select('item_id, is_correct')
+        .select('*')
         .eq('user_id', currentUser.id)
-        .eq('item_type', contentType)
+        .eq('item_type', contentType === 'sentences' ? 'sentence' : 'word')
         .order('attempted_at', { ascending: true })
         .then(({ data: attempts }) => {
             const testedIds = new Map();
@@ -159,35 +150,48 @@ function startQuiz() {
     }
     
     currentQuestionIndex = 0;
-    wrongAnswers = [];
+    answeredStates.clear();
     dom.setupView.style.display = 'none';
     dom.resultsView.style.display = 'none';
     dom.quizView.style.display = 'block';
     
-    displayQuestion();
+    renderProgressBar();
+    displayQuestion(true);
 }
 
-function displayQuestion() {
+function displayQuestion(shouldAutoplay = false) {
+    if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+    
     dom.feedbackContainer.innerHTML = '';
-    dom.nextQuestionBtn.style.display = 'none';
     
     if (currentQuestionIndex >= quizQuestions.length) {
         showResults();
         return;
     }
 
-    dom.questionProgress.textContent = `问题 ${currentQuestionIndex + 1} / ${quizQuestions.length}`;
     const question = quizQuestions[currentQuestionIndex];
     const contentType = dom.contentTypeSelector.querySelector('.active').dataset.type;
+    const isAnswered = answeredStates.has(question.id);
 
     if (contentType === 'sentences') {
-        displaySentenceQuestion(question);
+        dom.questionInstruction.textContent = '请根据听到的句子，选择正确的中文翻译。';
+        displaySentenceQuestion(question, isAnswered);
     } else {
-        displayWordQuestion(question);
+        dom.questionInstruction.textContent = '请根据听到的读音和看到的中文，拼写出对应的单词。';
+        displayWordQuestion(question, isAnswered);
     }
+
+    const audioText = contentType === 'sentences' ? question.spanish_text : question.spanish_word;
+    if (shouldAutoplay && !isAnswered) {
+        readText(audioText);
+    }
+    dom.quizReadBtn.onclick = () => readText(audioText, false, dom.quizReadBtn);
+    dom.quizSlowReadBtn.onclick = () => readText(audioText, true, dom.quizSlowReadBtn);
+
+    updateProgressBar();
 }
 
-function displaySentenceQuestion(question) {
+function displaySentenceQuestion(question, isAnswered) {
     const distractors = allSentences
         .filter(s => s.id !== question.id)
         .sort(() => 0.5 - Math.random())
@@ -203,17 +207,24 @@ function displaySentenceQuestion(question) {
     optionsHtml += '</div>';
     dom.questionContent.innerHTML = optionsHtml;
 
-    readText(question.spanish_text);
-    dom.replayAudioBtn.onclick = () => readText(question.spanish_text);
-
-    dom.questionContent.querySelectorAll('.mcq-btn').forEach(btn => {
-        btn.addEventListener('click', () => checkSentenceAnswer(btn.textContent === question.chinese_translation, question));
-    });
+    if (isAnswered) {
+        const { isCorrect, userAnswer } = answeredStates.get(question.id);
+        document.querySelectorAll('.mcq-btn').forEach(btn => {
+            btn.disabled = true;
+            if (btn.textContent === question.chinese_translation) btn.classList.add('correct');
+            if (btn.textContent === userAnswer && !isCorrect) btn.classList.add('incorrect');
+        });
+    } else {
+        dom.questionContent.querySelectorAll('.mcq-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => checkSentenceAnswer(btn.textContent === question.chinese_translation, question, e.target));
+        });
+    }
 }
 
-function displayWordQuestion(question) {
+function displayWordQuestion(question, isAnswered) {
     const contentHtml = `
         <div class="dictation-group">
+            <div class="dictation-word-translation">${question.chinese_translation}</div>
             <input type="text" id="dictation-input" class="form-input" placeholder="请在此输入听到的单词..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
             <div id="special-chars" class="special-chars">
                 <button>á</button><button>é</button><button>í</button><button>ó</button><button>ú</button><button>ñ</button><button>ü</button>
@@ -224,43 +235,43 @@ function displayWordQuestion(question) {
     dom.questionContent.innerHTML = contentHtml;
 
     const input = document.getElementById('dictation-input');
-    
-    readText(question.spanish_word);
-    dom.replayAudioBtn.onclick = () => readText(question.spanish_word);
+    const checkBtn = document.getElementById('check-dictation-btn');
 
-    document.getElementById('special-chars').querySelectorAll('button').forEach(btn => {
-        btn.addEventListener('click', () => {
-            input.value += btn.textContent;
-            input.focus();
+    if (isAnswered) {
+        const { userAnswer } = answeredStates.get(question.id);
+        input.value = userAnswer;
+        input.disabled = true;
+        checkBtn.disabled = true;
+    } else {
+        document.getElementById('special-chars').querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                input.value += btn.textContent;
+                input.focus();
+            });
         });
-    });
-
-    document.getElementById('check-dictation-btn').addEventListener('click', () => {
-        const userAnswer = input.value.trim();
-        checkWordAnswer(userAnswer, question);
-    });
-
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            document.getElementById('check-dictation-btn').click();
-        }
-    });
-    
-    input.focus();
+        checkBtn.addEventListener('click', () => checkWordAnswer(input.value.trim(), question));
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') checkBtn.click(); });
+        input.focus();
+    }
 }
 
-function checkSentenceAnswer(isCorrect, question) {
-    document.querySelectorAll('.mcq-btn').forEach(btn => btn.disabled = true);
+function checkSentenceAnswer(isCorrect, question, clickedButton) {
+    document.querySelectorAll('.mcq-btn').forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent === question.chinese_translation) btn.classList.add('correct');
+    });
     
     if (isCorrect) {
         dom.feedbackContainer.innerHTML = `<div class="feedback correct">回答正确！</div>`;
     } else {
-        dom.feedbackContainer.innerHTML = `<div class="feedback incorrect">回答错误！正确答案是：<br><strong>${question.chinese_translation}</strong></div>`;
-        wrongAnswers.push(question);
+        clickedButton.classList.add('incorrect');
+        dom.feedbackContainer.innerHTML = `<div class="feedback incorrect">回答错误！</div>`;
     }
-
+    
+    answeredStates.set(question.id, { isCorrect, question, userAnswer: clickedButton.textContent });
     logAttempt(question.id, isCorrect, 'sentence');
-    dom.nextQuestionBtn.style.display = 'inline-flex';
+    updateProgressBar();
+    autoAdvanceTimer = setTimeout(nextQuestion, 2000);
 }
 
 function checkWordAnswer(userAnswer, question) {
@@ -271,26 +282,29 @@ function checkWordAnswer(userAnswer, question) {
     if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
         isCorrect = true;
         feedbackHtml = `<div class="feedback correct">回答正确！</div>`;
-        if (userAnswer !== correctAnswer) {
-            feedbackHtml += `<p class="feedback-note">请注意大小写：<strong>${correctAnswer}</strong></p>`;
-        }
+        if (userAnswer !== correctAnswer) feedbackHtml += `<p class="feedback-note">请注意大小写：<strong>${correctAnswer}</strong></p>`;
     } else if (userAnswer.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() === correctAnswer.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()) {
-        isCorrect = true; // Lenient mode
+        isCorrect = true;
         feedbackHtml = `<div class="feedback correct">回答正确！</div>`;
         feedbackHtml += `<p class="feedback-note">请注意重音符号：<strong>${correctAnswer}</strong></p>`;
     } else {
         isCorrect = false;
         feedbackHtml = `<div class="feedback incorrect">回答错误！正确答案是：<br><strong>${correctAnswer}</strong></div>`;
-        wrongAnswers.push(question);
     }
 
     dom.feedbackContainer.innerHTML = feedbackHtml;
+    answeredStates.set(question.id, { isCorrect, question, userAnswer });
     logAttempt(question.id, isCorrect, 'word');
-    dom.nextQuestionBtn.style.display = 'inline-flex';
+    updateProgressBar();
     document.getElementById('check-dictation-btn').disabled = true;
+    document.getElementById('dictation-input').disabled = true;
+    autoAdvanceTimer = setTimeout(nextQuestion, 3000);
 }
 
 async function logAttempt(itemId, isCorrect, itemType) {
+    if (answeredStates.has(itemId)) { 
+        // Logic to update existing attempt could go here, but for now we insert new ones
+    }
     await supabase.from('quiz_attempts').insert({
         user_id: currentUser.id,
         item_id: itemId,
@@ -300,16 +314,23 @@ async function logAttempt(itemId, isCorrect, itemType) {
 }
 
 function nextQuestion() {
-    currentQuestionIndex++;
-    displayQuestion();
+    if (currentQuestionIndex < quizQuestions.length - 1) {
+        currentQuestionIndex++;
+        displayQuestion(true);
+    } else {
+        showResults();
+    }
 }
 
 function showResults() {
     dom.quizView.style.display = 'none';
     dom.resultsView.style.display = 'block';
+    
+    const answeredCount = answeredStates.size;
+    wrongAnswers = Array.from(answeredStates.values()).filter(state => !state.isCorrect).map(state => state.question);
+    const correctCount = answeredCount - wrongAnswers.length;
 
-    const score = quizQuestions.length - wrongAnswers.length;
-    dom.scoreText.textContent = `您答对了 ${score} / ${quizQuestions.length} 题！`;
+    dom.scoreText.textContent = `您答对了 ${correctCount} / ${answeredCount} 题！`;
 
     if (wrongAnswers.length > 0) {
         let wrongHtml = '<h3>错题回顾：</h3><ul>';
@@ -322,31 +343,92 @@ function showResults() {
         dom.wrongAnswersList.innerHTML = wrongHtml;
         dom.retestWrongBtn.style.display = 'inline-flex';
     } else {
-        dom.wrongAnswersList.innerHTML = '<p>太棒了，全部正确！</p>';
+        dom.wrongAnswersList.innerHTML = answeredCount > 0 ? '<p>太棒了，全部正确！</p>' : '<p>您没有回答任何题目。</p>';
         dom.retestWrongBtn.style.display = 'none';
     }
 }
 
-function setupEventListeners() {
-    dom.contentTypeSelector.addEventListener('click', (e) => {
-        if (e.target.tagName === 'BUTTON' && !e.target.classList.contains('active')) {
-            dom.contentTypeSelector.querySelector('.active').classList.remove('active');
-            e.target.classList.add('active');
-            loadStats();
+function renderProgressBar() {
+    let dotsHtml = '';
+    for (let i = 0; i < quizQuestions.length; i++) {
+        dotsHtml += `<div class="progress-dot" data-index="${i}"></div>`;
+    }
+    dom.progressBarContainer.innerHTML = `<div class="progress-bar-track">${dotsHtml}</div>`;
+    
+    const track = dom.progressBarContainer.querySelector('.progress-bar-track');
+    track.querySelectorAll('.progress-dot').forEach(dot => {
+        dot.addEventListener('click', () => {
+            currentQuestionIndex = parseInt(dot.dataset.index, 10);
+            displayQuestion();
+        });
+    });
+}
+
+function updateProgressBar() {
+    const track = dom.progressBarContainer.querySelector('.progress-bar-track');
+    if (!track) return;
+    
+    track.querySelectorAll('.progress-dot').forEach((dot, index) => {
+        dot.classList.remove('current', 'correct', 'incorrect');
+        const questionId = quizQuestions[index].id;
+        const state = answeredStates.get(questionId);
+        if (state) {
+            dot.classList.add(state.isCorrect ? 'correct' : 'incorrect');
+        }
+        if (index === currentQuestionIndex) {
+            dot.classList.add('current');
         }
     });
 
-    dom.setupForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        generateQuizQuestions();
-    });
+    const currentDot = track.children[currentQuestionIndex];
+    if (currentDot) {
+        const containerWidth = dom.progressBarContainer.offsetWidth;
+        const dotOffset = currentDot.offsetLeft + (currentDot.offsetWidth / 2);
+        let scrollPosition = dotOffset - (containerWidth / 2);
+        
+        if (scrollPosition < 0) scrollPosition = 0;
+        
+        dom.progressBarContainer.scrollTo({
+            left: scrollPosition,
+            behavior: 'smooth'
+        });
+    }
+}
 
-    dom.nextQuestionBtn.addEventListener('click', nextQuestion);
-
-    dom.retestWrongBtn.addEventListener('click', () => {
-        quizQuestions = [...wrongAnswers];
-        startQuiz();
-    });
+function setupEventListeners() {
+    if (dom.contentTypeSelector) {
+        dom.contentTypeSelector.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON' && !e.target.classList.contains('active')) {
+                dom.contentTypeSelector.querySelector('.active').classList.remove('active');
+                e.target.classList.add('active');
+                loadStats();
+            }
+        });
+    }
+    
+    if (dom.setupForm) {
+        dom.setupForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            generateQuizQuestions();
+        });
+    }
+    
+    if (dom.endQuizBtn) dom.endQuizBtn.addEventListener('click', showResults);
+    
+    if (dom.retestWrongBtn) {
+        dom.retestWrongBtn.addEventListener('click', () => {
+            quizQuestions = [...wrongAnswers];
+            startQuiz();
+        });
+    }
+    
+    if (dom.newQuizBtn) {
+        dom.newQuizBtn.addEventListener('click', () => {
+            dom.resultsView.style.display = 'none';
+            dom.setupView.style.display = 'block';
+            loadStats(); 
+        });
+    }
 }
 
 async function initializePage() {

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>注册 - 西班牙语学习助手</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <header>
@@ -13,7 +12,6 @@
             <a href="index.html" class="logo">西班牙语学习助手</a>
         </div>
     </header>
-
     <main id="main-content" class="auth-container">
         <div class="card auth-card">
             <h2 class="auth-title">创建新账户</h2>
@@ -30,7 +28,6 @@
                     <label for="signup-password-confirm">确认密码</label>
                     <input type="password" id="signup-password-confirm" class="form-input" required autocomplete="new-password">
                 </div>
-
                 <div class="form-group">
                     <label for="signup-nickname">昵称 (用于应用内显示)</label>
                     <input type="text" id="signup-nickname" class="form-input" required autocomplete="nickname" minlength="2" maxlength="50">
@@ -45,10 +42,6 @@
             </p>
         </div>
     </main>
-    
-    <script type="module">
-        import { initializeAuthForms } from './js/auth.js';
-        initializeAuthForms();
-    </script>
+    <script type="module" src="js/signup-main.js"></script>
 </body>
 </html>

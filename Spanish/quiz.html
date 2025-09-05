@@ -45,29 +45,48 @@
                             <button type="button" data-type="words">单词测试</button>
                         </div>
                     </div>
-
                     <div class="form-group">
                         <label class="form-label">2. 选择测试范围：</label>
                         <div id="scope-selection" class="scope-selection-group">
                             <div class="loading-spinner"></div>
                         </div>
                     </div>
-                    
                     <button type="submit" class="btn btn-primary btn-full-width" id="start-quiz-btn">开始测试</button>
                 </form>
             </div>
 
             <div id="quiz-view" class="card quiz-card" style="display: none;">
-                <div class="quiz-header">
-                    <span id="question-progress">问题 1 / 10</span>
-                    <button id="replay-audio-btn" class="icon-btn-header" title="重播">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                    </button>
+                <p id="question-instruction" class="quiz-instruction"></p>
+                
+                <div id="playback-controls" class="playback-controls">
+                     <div class="action-item">
+                        <button class="icon-btn" id="quiz-read-btn" title="朗读">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                        </button>
+                        <span class="action-label">朗读</span>
+                    </div>
+                    <div class="action-item">
+                        <button class="icon-btn" id="quiz-slow-read-btn" title="慢速朗读">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </button>
+                        <span class="action-label">慢速朗读</span>
+                    </div>
                 </div>
+
                 <div id="question-content" class="question-content">
                     </div>
                 <div id="feedback-container" class="feedback-container"></div>
-                 <button id="next-question-btn" class="btn btn-secondary" style="display: none;">下一题</button>
+                
+                <div class="quiz-footer">
+                    <div class="progress-bar-container" id="progress-bar-container">
+                        </div>
+                    <div class="action-item">
+                        <button class="icon-btn" id="end-quiz-btn" title="结束测试">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+                        </button>
+                        <span class="action-label">结束测试</span>
+                    </div>
+                </div>
             </div>
 
             <div id="results-view" class="card quiz-card" style="display: none;">
@@ -78,13 +97,12 @@
                     </div>
                 <div class="results-actions">
                     <button id="retest-wrong-btn" class="btn btn-primary">仅针对错题再测一次</button>
-                    <a href="index.html" class="btn btn-secondary">返回学习</a>
+                    <button id="new-quiz-btn" class="btn btn-secondary">开始新测试</button>
                 </div>
             </div>
 
         </div>
     </main>
-
     <script type="module" src="js/quiz-main.js"></script>
 </body>
 </html>
