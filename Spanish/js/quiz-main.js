@@ -1,16 +1,18 @@
 import { supabase } from './config.js';
 import { protectPage, initializeHeader } from './auth.js';
-import { readText, initializeDropdowns } from './utils.js';
+import { readText, initializeDropdowns, showCustomConfirm } from './utils.js';
 
 // --- 1. State Management ---
 let currentUser = null;
 let allSentences = [];
 let allWords = [];
 let quizQuestions = [];
-let wrongAnswers = [];
-let currentQuestionIndex = 0;
 let answeredStates = new Map();
-let autoAdvanceTimer = null; // 【最终修复】声明计时器变量
+let currentQuestionIndex = 0;
+let autoAdvanceTimer = null;
+// 【新】为错题回顾功能定义一个变量
+let wrongAnswers = [];
+
 
 // --- 2. DOM Elements ---
 const dom = {
@@ -22,13 +24,15 @@ const dom = {
     scopeSelection: document.getElementById('scope-selection'),
     startQuizBtn: document.getElementById('start-quiz-btn'),
     questionInstruction: document.getElementById('question-instruction'),
-    playbackControls: document.getElementById('playback-controls'),
+    // 【旧】playbackControls: document.getElementById('playback-controls'),
     quizReadBtn: document.getElementById('quiz-read-btn'),
     quizSlowReadBtn: document.getElementById('quiz-slow-read-btn'),
     endQuizBtn: document.getElementById('end-quiz-btn'),
     questionContent: document.getElementById('question-content'),
     feedbackContainer: document.getElementById('feedback-container'),
     progressBarContainer: document.getElementById('progress-bar-container'),
+    progressPrevBtn: document.getElementById('progress-prev-btn'),
+    progressNextBtn: document.getElementById('progress-next-btn'),
     scoreText: document.getElementById('score-text'),
     wrongAnswersList: document.getElementById('wrong-answers-list'),
     retestWrongBtn: document.getElementById('retest-wrong-btn'),
@@ -173,6 +177,13 @@ function displayQuestion(shouldAutoplay = false) {
     const contentType = dom.contentTypeSelector.querySelector('.active').dataset.type;
     const isAnswered = answeredStates.has(question.id);
 
+    // 【改动】根据测试类型添加/移除CSS类
+    if (contentType === 'sentences') {
+        dom.quizView.classList.add('sentence-quiz-mode');
+    } else {
+        dom.quizView.classList.remove('sentence-quiz-mode');
+    }
+
     if (contentType === 'sentences') {
         dom.questionInstruction.textContent = '请根据听到的句子，选择正确的中文翻译。';
         displaySentenceQuestion(question, isAnswered);
@@ -201,8 +212,10 @@ function displaySentenceQuestion(question, isAnswered) {
     const options = [question.chinese_translation, ...distractors].sort(() => 0.5 - Math.random());
 
     let optionsHtml = '<div class="mcq-options">';
-    options.forEach(option => {
-        optionsHtml += `<button class="btn mcq-btn">${option}</button>`;
+    // 【改动】添加编号 (A, B, C, D) 和 data-option 属性
+    options.forEach((option, index) => {
+        const letter = String.fromCharCode(65 + index); // A, B, C, D
+        optionsHtml += `<button class="btn mcq-btn" data-option="${option}">${letter}. ${option}</button>`;
     });
     optionsHtml += '</div>';
     dom.questionContent.innerHTML = optionsHtml;
@@ -211,12 +224,16 @@ function displaySentenceQuestion(question, isAnswered) {
         const { isCorrect, userAnswer } = answeredStates.get(question.id);
         document.querySelectorAll('.mcq-btn').forEach(btn => {
             btn.disabled = true;
-            if (btn.textContent === question.chinese_translation) btn.classList.add('correct');
-            if (btn.textContent === userAnswer && !isCorrect) btn.classList.add('incorrect');
+            // 【改动】使用 data-option 进行判断
+            if (btn.dataset.option === question.chinese_translation) btn.classList.add('correct');
+            if (btn.dataset.option === userAnswer && !isCorrect) btn.classList.add('incorrect');
         });
     } else {
         dom.questionContent.querySelectorAll('.mcq-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => checkSentenceAnswer(btn.textContent === question.chinese_translation, question, e.target));
+            btn.addEventListener('click', (e) => {
+                // 【改动】使用 data-option 进行判断
+                checkSentenceAnswer(btn.dataset.option === question.chinese_translation, question, e.target);
+            });
         });
     }
 }
@@ -258,7 +275,7 @@ function displayWordQuestion(question, isAnswered) {
 function checkSentenceAnswer(isCorrect, question, clickedButton) {
     document.querySelectorAll('.mcq-btn').forEach(btn => {
         btn.disabled = true;
-        if (btn.textContent === question.chinese_translation) btn.classList.add('correct');
+        if (btn.dataset.option === question.chinese_translation) btn.classList.add('correct');
     });
     
     if (isCorrect) {
@@ -268,7 +285,8 @@ function checkSentenceAnswer(isCorrect, question, clickedButton) {
         dom.feedbackContainer.innerHTML = `<div class="feedback incorrect">回答错误！</div>`;
     }
     
-    answeredStates.set(question.id, { isCorrect, question, userAnswer: clickedButton.textContent });
+    // 【改动】存储 userAnswer 时使用 data-option
+    answeredStates.set(question.id, { isCorrect, question, userAnswer: clickedButton.dataset.option });
     logAttempt(question.id, isCorrect, 'sentence');
     updateProgressBar();
     autoAdvanceTimer = setTimeout(nextQuestion, 2000);
@@ -351,13 +369,14 @@ function showResults() {
 function renderProgressBar() {
     let dotsHtml = '';
     for (let i = 0; i < quizQuestions.length; i++) {
-        dotsHtml += `<div class="progress-dot" data-index="${i}"></div>`;
+        dotsHtml += `<div class="progress-dot" data-index="${i}">${i + 1}</div>`;
     }
     dom.progressBarContainer.innerHTML = `<div class="progress-bar-track">${dotsHtml}</div>`;
     
     const track = dom.progressBarContainer.querySelector('.progress-bar-track');
     track.querySelectorAll('.progress-dot').forEach(dot => {
         dot.addEventListener('click', () => {
+            if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer); // 【优化】点击时取消自动跳转
             currentQuestionIndex = parseInt(dot.dataset.index, 10);
             displayQuestion();
         });
@@ -388,6 +407,7 @@ function updateProgressBar() {
         
         if (scrollPosition < 0) scrollPosition = 0;
         
+        // 【新增】平滑滚动到居中位置
         dom.progressBarContainer.scrollTo({
             left: scrollPosition,
             behavior: 'smooth'
@@ -395,40 +415,55 @@ function updateProgressBar() {
     }
 }
 
+async function handleEndQuiz() {
+    if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+    const confirmation = await showCustomConfirm('您确定要结束本次测试吗？');
+    if (confirmation) {
+        showResults();
+    }
+}
+
 function setupEventListeners() {
-    if (dom.contentTypeSelector) {
-        dom.contentTypeSelector.addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON' && !e.target.classList.contains('active')) {
-                dom.contentTypeSelector.querySelector('.active').classList.remove('active');
-                e.target.classList.add('active');
-                loadStats();
-            }
-        });
-    }
-    
-    if (dom.setupForm) {
-        dom.setupForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            generateQuizQuestions();
-        });
-    }
-    
-    if (dom.endQuizBtn) dom.endQuizBtn.addEventListener('click', showResults);
-    
-    if (dom.retestWrongBtn) {
-        dom.retestWrongBtn.addEventListener('click', () => {
-            quizQuestions = [...wrongAnswers];
-            startQuiz();
-        });
-    }
-    
-    if (dom.newQuizBtn) {
-        dom.newQuizBtn.addEventListener('click', () => {
-            dom.resultsView.style.display = 'none';
-            dom.setupView.style.display = 'block';
-            loadStats(); 
-        });
-    }
+    dom.contentTypeSelector.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON' && !e.target.classList.contains('active')) {
+            dom.contentTypeSelector.querySelector('.active').classList.remove('active');
+            e.target.classList.add('active');
+            loadStats();
+        }
+    });
+
+    dom.setupForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        generateQuizQuestions();
+    });
+
+    dom.endQuizBtn.addEventListener('click', handleEndQuiz);
+    dom.retestWrongBtn.addEventListener('click', () => {
+        quizQuestions = [...wrongAnswers];
+        startQuiz();
+    });
+    dom.newQuizBtn.addEventListener('click', () => {
+        dom.resultsView.style.display = 'none';
+        dom.setupView.style.display = 'block';
+        loadStats(); 
+    });
+
+    // 【新增】为进度条箭头添加事件监听
+    dom.progressPrevBtn.addEventListener('click', () => {
+        if (currentQuestionIndex > 0) {
+            if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+            currentQuestionIndex--;
+            displayQuestion();
+        }
+    });
+
+    dom.progressNextBtn.addEventListener('click', () => {
+        if (currentQuestionIndex < quizQuestions.length - 1) {
+            if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+            currentQuestionIndex++;
+            displayQuestion();
+        }
+    });
 }
 
 async function initializePage() {

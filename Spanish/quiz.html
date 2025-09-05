@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>学习测试 - 西班牙语学习助手</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <header>
@@ -58,8 +57,11 @@
             <div id="quiz-view" class="card quiz-card" style="display: none;">
                 <p id="question-instruction" class="quiz-instruction"></p>
                 
-                <div id="playback-controls" class="playback-controls">
-                     <div class="action-item">
+                <div id="question-content" class="question-content">
+                    </div>
+
+                <div id="playback-and-actions" class="card-actions">
+                    <div class="action-item">
                         <button class="icon-btn" id="quiz-read-btn" title="朗读">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
                         </button>
@@ -71,21 +73,25 @@
                         </button>
                         <span class="action-label">慢速朗读</span>
                     </div>
-                </div>
-
-                <div id="question-content" class="question-content">
-                    </div>
-                <div id="feedback-container" class="feedback-container"></div>
-                
-                <div class="quiz-footer">
-                    <div class="progress-bar-container" id="progress-bar-container">
-                        </div>
-                    <div class="action-item">
-                        <button class="icon-btn" id="end-quiz-btn" title="结束测试">
+                     <div class="action-item">
+                        <button class="icon-btn btn-end-quiz" id="end-quiz-btn" title="结束测试">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
                         </button>
                         <span class="action-label">结束测试</span>
                     </div>
+                </div>
+                
+                <div id="feedback-container" class="feedback-container"></div>
+                
+                <div class="quiz-footer">
+                    <button id="progress-prev-btn" class="progress-arrow-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <div class="progress-bar-container" id="progress-bar-container">
+                        </div>
+                    <button id="progress-next-btn" class="progress-arrow-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
                 </div>
             </div>
 
@@ -103,6 +109,17 @@
 
         </div>
     </main>
+
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <p id="confirmMessage"></p>
+            <div class="modal-buttons">
+                <button id="confirmBtn" class="btn btn-primary">确定</button>
+                <button id="cancelBtn" class="btn btn-secondary">取消</button>
+            </div>
+        </div>
+    </div>
+    
     <script type="module" src="js/quiz-main.js"></script>
 </body>
 </html>

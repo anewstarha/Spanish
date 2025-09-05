@@ -180,6 +180,8 @@ header {
     box-shadow: 0 4px 8px var(--shadow-color);
 }
 
+/* ... (前面代码保持不变) ... */
+
 /* ============================================= */
 /* 测试页面专属样式 (Quiz Page)                  */
 /* ============================================= */
@@ -236,7 +238,7 @@ header {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem; /* 【改动】减少了下边距 (从 1.5rem 到 1rem) */
 }
 .mcq-options {
     display: grid;
@@ -298,13 +300,23 @@ header {
 }
 .feedback-container {
     min-height: 40px;
-    padding: 1rem 0 0 0;
+    padding-top: 0; /* 【改动】移除了上边距 (从 1rem 0 0 0 改为 0) */
     text-align: center;
     font-weight: bold;
 }
 .feedback.correct { color: var(--success-color); }
 .feedback.incorrect { color: var(--danger-color); }
 .feedback-note { font-size: 0.9rem; color: var(--muted-color); font-weight: normal; }
+
+/* 【新增】仅在句子测试模式下应用的样式 */
+.sentence-quiz-mode .quiz-instruction {
+    text-align: left;
+}
+
+.sentence-quiz-mode .mcq-btn {
+    color: var(--primary-color);
+}
+/* 【新增结束】 */
 
 .quiz-footer {
     margin-top: 2rem;
@@ -314,6 +326,25 @@ header {
     align-items: center;
     gap: 1rem;
 }
+
+
+
+.progress-arrow-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted-color);
+    padding: 0.5rem;
+    border-radius: 50%;
+}
+.progress-arrow-btn:hover {
+    background-color: #f0f0f0;
+}
+.progress-arrow-btn:disabled {
+    color: #e0e0e0;
+    cursor: not-allowed;
+}
+
 .progress-bar-container {
     flex-grow: 1;
     overflow-x: auto;
@@ -326,24 +357,40 @@ header {
 }
 .progress-bar-track {
     display: flex;
-    gap: 6px;
-    padding: 5px 0;
+    gap: 8px;
+    padding: 5px;
 }
 .progress-dot {
-    width: 12px;
-    height: 12px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     background-color: #e9ecef;
     flex-shrink: 0;
     transition: all 0.3s ease;
-    border: 3px solid transparent;
+    border: 2px solid transparent;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--muted-color);
 }
-.progress-dot.correct { background-color: var(--success-color); }
-.progress-dot.incorrect { background-color: var(--danger-color); }
+.progress-dot.correct { background-color: var(--success-color); color: white; }
+.progress-dot.incorrect { background-color: var(--danger-color); color: white; }
 .progress-dot.current {
     border-color: var(--primary-color);
-    transform: scale(1.3);
+    transform: scale(1.2);
+    color: var(--primary-color);
+}
+
+.btn-end-quiz {
+    border-color: var(--danger-color);
+    color: var(--danger-color);
+}
+.btn-end-quiz:hover {
+    background-color: var(--danger-color);
+    color: white;
 }
 
 .score-text { font-size: 1.5rem; text-align: center; }
@@ -376,6 +423,7 @@ header {
 /* ============================================= */
 /* 其他页面样式 (Other Pages)                   */
 /* ============================================= */
+/* ... (此处省略其他页面的样式代码，请将这一整块新的Quiz Page样式添加到您现有的CSS文件中) ... */
 
 #study-page .main-section {
     max-width: 600px;
