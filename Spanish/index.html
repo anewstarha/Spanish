@@ -15,7 +15,7 @@
             <nav class="header-actions">
                 <div class="dropdown-container">
                     <button class="icon-btn-header user-avatar-btn" id="user-menu-btn" title="用户菜单">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <svg xmlns="http://www.w.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                     </button>
                     <div class="dropdown-menu" id="user-menu">
                         <div class="dropdown-header" id="user-menu-greeting">你好, ...</div>
@@ -94,10 +94,12 @@
                                 <div class="chinese"></div>
                             </div>
                             <div class="card-actions">
-                                <div class="action-item"><button class="icon-btn" id="index-slow-read-btn" title="慢速朗读"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></button><span class="action-label">慢速朗读</span></div>
-                                <div class="action-item"><button class="icon-btn" id="index-word-read-btn" title="逐词朗读"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10V8a2 2 0 0 1 2-2h2"></path><path d="M14 4h4a2 2 0 0 1 2 2v2"></path><path d="M20 14v4a2 2 0 0 1-2 2h-2"></path><path d="M10 20H6a2 2 0 0 1-2-2v-2"></path><line x1="7" y1="12" x2="17" y2="12"></line></svg></button><span class="action-label">逐词朗读</span></div>
-                                <div class="action-item"><button class="icon-btn" id="index-read-btn" title="朗读"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></button><span class="action-label">朗读</span></div>
-                                <div class="action-item"><button class="icon-btn" id="index-ai-explain-btn" title="AI解释"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"></path><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg></button><span class="action-label">AI解释</span></div>
+                                <div class="playback-group">
+                                    <div class="action-item"><button class="icon-btn" id="index-slow-read-btn" title="慢速朗读"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></button><span class="action-label">慢速朗读</span></div>
+                                    <div class="action-item"><button class="icon-btn" id="index-read-btn" title="朗读"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></button><span class="action-label">朗读</span></div>
+                                    <div class="action-item"><button class="icon-btn" id="index-word-read-btn" title="逐词朗读"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10V8a2 2 0 0 1 2-2h2"></path><path d="M14 4h4a2 2 0 0 1 2 2v2"></path><path d="M20 14v4a2 2 0 0 1-2 2h-2"></path><path d="M10 20H6a2 2 0 0 1-2-2v-2"></path><line x1="7" y1="12" x2="17" y2="12"></line></svg></button><span class="action-label">逐词朗读</span></div>
+                                </div>
+                                <div class="action-item action-item-right"><button class="icon-btn" id="index-ai-explain-btn" title="AI解释"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"></path><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg></button><span class="action-label">AI解释</span></div>
                             </div>
                         </div>
                         <div class="card-footer">
@@ -112,8 +114,16 @@
                                 <div class="chinese"></div><p class="source-sentence"></p>
                             </div>
                             <div class="card-actions">
-                                <div class="action-item"><button class="icon-btn" id="word-slow-read-btn" title="慢速朗读"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></button><span class="action-label">慢速朗读</span></div>
-                                <div class="action-item"><button class="icon-btn" id="word-read-btn" title="朗读"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></button><span class="action-label">朗读</span></div>
+                                <div class="playback-group">
+                                    <div class="action-item"><button class="icon-btn" id="word-slow-read-btn" title="慢速朗读"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></button><span class="action-label">慢速朗读</span></div>
+                                    <div class="action-item"><button class="icon-btn" id="word-read-btn" title="朗读"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></button><span class="action-label">朗读</span></div>
+                                </div>
+                                <div class="action-item action-item-right">
+                                    <button class="icon-btn" id="word-ai-explain-btn" title="AI解释">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"></path><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                                    </button>
+                                    <span class="action-label">AI解释</span>
+                                </div>
                             </div>
                         </div>
                         <div class="card-footer">
@@ -143,6 +153,14 @@
     </div></div>
     <div id="editSentenceModal" class="modal"><div class="modal-content"><h3>编辑句子</h3><form id="edit-sentence-form" class="modal-form"><input type="hidden" id="edit-sentence-id"><textarea id="edit-spanish-text" required></textarea><textarea id="edit-chinese-text" required></textarea><div class="modal-buttons"><button type="submit" class="btn btn-primary">保存更改</button><button type="button" id="cancel-edit-btn" class="btn btn-secondary">取消</button></div></form></div></div>
     <div id="sentenceListModal" class="modal"><div class="modal-content"><span class="close-button" id="sentenceListCloseBtn">&times;</span><h3 id="sentenceListTitle"></h3><div id="sentence-list-content" class="sentence-list-content"></div></div></div>
+    <div id="aiWordExplanationModal" class="modal">
+        <div class="modal-content ai-word-modal-content">
+            <span class="close-button" id="aiWordExplanationCloseBtn">&times;</span>
+            <h3 id="aiWordExplanationTitle"></h3>
+            <div id="aiWordExplanationContent" class="explanation-content"></div>
+        </div>
+    </div>
+
     <script type="module" src="js/study-main.js"></script>
 </body>
 </html>

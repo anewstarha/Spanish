@@ -714,12 +714,19 @@ header {
 
 .card-actions {
     display: flex;
-    gap: 1.5rem;
-    justify-content: center;
-    flex-wrap: wrap;
+    justify-content: center; /* 默认居中朗读组 */
+    align-items: center; /* 确保垂直对齐 */
     width: 100%;
     margin-top: auto;
-    padding-top: 2rem;
+    margin-top: 2rem;
+    position: relative; /* 为AI按钮提供定位参考 */
+}
+
+/* 【新增】朗读按钮组的样式 */
+.playback-group {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
 }
 
 .action-item {
@@ -727,6 +734,14 @@ header {
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
+}
+
+/* 【修改】将AI按钮绝对定位到右侧 */
+.action-item-right {
+    position: absolute;
+    right: 0; /* 相对于card-actions的右边缘 */
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 .action-label {
@@ -1216,7 +1231,51 @@ header {
     70% { box-shadow: 0 0 0 10px rgba(0, 123, 255, 0); }
     100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
 }
+/* 【新增】单词AI解释弹窗的专属样式 */
+.ai-word-modal-content {
+    max-width: 700px;
+    text-align: left;
+}
 
+#aiWordExplanationContent .ai-section {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+#aiWordExplanationContent .ai-section:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+#aiWordExplanationContent .ai-section-title {
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+#aiWordExplanationContent .ipa-text {
+    font-size: 1.2rem;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+#aiWordExplanationContent .pronunciation-tip {
+    font-style: italic;
+    color: var(--muted-color);
+}
+
+#aiWordExplanationContent .conjugation-table {
+    list-style: none;
+    padding: 0;
+}
+#aiWordExplanationContent .conjugation-table li {
+    padding: 0.25rem 0;
+}
+/* 【新增】用于将flex容器中的项目推到最右侧 */
+.action-item-right {
+    margin-left: auto;
+}
 @media (max-width: 768px) {
     .logo {
         font-size: 1rem;

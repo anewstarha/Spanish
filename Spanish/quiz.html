@@ -1,22 +1,32 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>学习测试 - 西班牙语学习助手</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <header>
         <div class="container header-container">
             <a href="index.html" class="logo">
-                <svg class="back-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><polyline points="12 19 5 12 12 5"></polyline></svg>
+                <svg class="back-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
                 <span>西班牙语学习助手</span>
             </a>
             <nav class="header-actions">
                 <div class="dropdown-container">
                     <button class="icon-btn-header user-avatar-btn" id="user-menu-btn" title="用户菜单">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
                     </button>
                     <div class="dropdown-menu" id="user-menu">
                         <div class="dropdown-header" id="user-menu-greeting">你好, ...</div>
@@ -33,20 +43,29 @@
 
     <main id="main-content">
         <div class="container page-container">
-
             <div id="quiz-setup" class="card quiz-card">
                 <h2 class="quiz-title">学习测试</h2>
                 <form id="quiz-setup-form">
                     <div class="form-group">
-                        <label class="form-label">1. 选择测试内容：</label>
+                        <label class="form-label">1. 选择测试内容</label>
                         <div class="segmented-control" id="content-type-selector">
                             <button type="button" data-type="sentences" class="active">句子测试</button>
                             <button type="button" data-type="words">单词测试</button>
                         </div>
                     </div>
+
                     <div class="form-group">
-                        <label class="form-label">2. 选择测试范围：</label>
-                        <div id="scope-selection" class="scope-selection-group">
+                        <label class="form-label">2. 选择学习范围</label>
+                        <div class="segmented-control" id="study-scope-selector">
+                            <button type="button" data-scope="all">全部内容</button>
+                            <button type="button" data-scope="studied" class="active">已学习的</button>
+                            <button type="button" data-scope="unstudied">未学习的</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">3. 精确筛选测试状态 (可选)</label>
+                        <div id="test-scope-selection" class="scope-selection-group">
                             <div class="loading-spinner"></div>
                         </div>
                     </div>
@@ -56,41 +75,62 @@
 
             <div id="quiz-view" class="card quiz-card" style="display: none;">
                 <p id="question-instruction" class="quiz-instruction"></p>
-                
+
                 <div id="question-content" class="question-content">
-                    </div>
+                </div>
 
                 <div id="playback-and-actions" class="card-actions">
                     <div class="action-item">
                         <button class="icon-btn" id="quiz-read-btn" title="朗读">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            </svg>
                         </button>
                         <span class="action-label">朗读</span>
                     </div>
                     <div class="action-item">
                         <button class="icon-btn" id="quiz-slow-read-btn" title="慢速朗读">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                width="24" height="24">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
                         </button>
                         <span class="action-label">慢速朗读</span>
                     </div>
-                     <div class="action-item">
+                    <div class="action-item">
                         <button class="icon-btn btn-end-quiz" id="end-quiz-btn" title="结束测试">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                                <line x1="12" y1="2" x2="12" y2="12"></line>
+                            </svg>
                         </button>
                         <span class="action-label">结束测试</span>
                     </div>
                 </div>
-                
+
                 <div id="feedback-container" class="feedback-container"></div>
-                
+
                 <div class="quiz-footer">
                     <button id="progress-prev-btn" class="progress-arrow-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
                     </button>
                     <div class="progress-bar-container" id="progress-bar-container">
-                        </div>
+                    </div>
                     <button id="progress-next-btn" class="progress-arrow-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -100,7 +140,7 @@
                 <p id="score-text" class="score-text">您答对了 0 / 0 题！</p>
                 <div id="wrong-answers-list" class="wrong-answers-list">
                     <h3>错题回顾：</h3>
-                    </div>
+                </div>
                 <div class="results-actions">
                     <button id="retest-wrong-btn" class="btn btn-primary">仅针对错题再测一次</button>
                     <button id="new-quiz-btn" class="btn btn-secondary">开始新测试</button>
@@ -119,7 +159,8 @@
             </div>
         </div>
     </div>
-    
+
     <script type="module" src="js/quiz-main.js"></script>
 </body>
+
 </html>
