@@ -180,8 +180,6 @@ header {
     box-shadow: 0 4px 8px var(--shadow-color);
 }
 
-/* ... (前面代码保持不变) ... */
-
 /* ============================================= */
 /* 测试页面专属样式 (Quiz Page)                  */
 /* ============================================= */
@@ -220,10 +218,10 @@ header {
 }
 
 .quiz-instruction {
-    text-align: center;
+    text-align: center; /* 恢复居中，因为新设计居中更好看 */
     color: var(--muted-color);
     margin-top: 0;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem; /* 增加与选项的间距 */
     font-weight: 500;
 }
 .playback-controls {
@@ -238,20 +236,46 @@ header {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    margin-bottom: 1rem; /* 【改动】减少了下边距 (从 1.5rem 到 1rem) */
+    margin-bottom: 1rem;
 }
 .mcq-options {
     display: grid;
     grid-template-columns: 1fr;
     gap: 0.75rem;
 }
+
+/* 【最终修正】选项按钮样式更新 */
 .mcq-btn {
+    display: flex; /* 1. 改为Flex布局 */
+    align-items: center; /* 2. 垂直居中对齐圆圈和文字 */
+    gap: 1rem; /* 3. 设置圆圈和文字的间距 */
+    padding: 0.75rem 1rem; /* 4. 调整内边距 */
     text-align: left;
     background-color: var(--card-background);
     border: 1px solid var(--border-color);
     color: var(--text-color-dark);
     justify-content: flex-start;
 }
+/* 【新增】字母圆圈的样式 */
+.mcq-letter {
+    flex-shrink: 0; /* 防止圆圈被压缩 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: var(--light-blue-bg);
+    color: var(--primary-color);
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+/* 【新增】选项文字的样式 */
+.mcq-text {
+    flex-grow: 1; /* 让文字区域占据剩余空间 */
+    line-height: 1.5;
+}
+
 .mcq-btn:hover {
     background-color: var(--light-blue-bg);
 }
@@ -259,16 +283,28 @@ header {
     opacity: 0.7;
     cursor: not-allowed;
 }
+
+/* 【最终修正】更新正确/错误状态下的样式 */
 .mcq-btn.correct, .mcq-btn.correct:hover {
     background-color: var(--success-color);
     color: white;
     border-color: var(--success-color);
 }
+.mcq-btn.correct .mcq-letter {
+    background-color: white;
+    color: var(--success-color);
+}
+
 .mcq-btn.incorrect, .mcq-btn.incorrect:hover {
     background-color: var(--danger-color);
     color: white;
     border-color: var(--danger-color);
 }
+.mcq-btn.incorrect .mcq-letter {
+    background-color: white;
+    color: var(--danger-color);
+}
+
 .dictation-group {
     display: flex;
     flex-direction: column;
@@ -300,23 +336,13 @@ header {
 }
 .feedback-container {
     min-height: 40px;
-    padding-top: 0; /* 【改动】移除了上边距 (从 1rem 0 0 0 改为 0) */
+    padding-top: 0;
     text-align: center;
     font-weight: bold;
 }
 .feedback.correct { color: var(--success-color); }
 .feedback.incorrect { color: var(--danger-color); }
 .feedback-note { font-size: 0.9rem; color: var(--muted-color); font-weight: normal; }
-
-/* 【新增】仅在句子测试模式下应用的样式 */
-.sentence-quiz-mode .quiz-instruction {
-    text-align: left;
-}
-
-.sentence-quiz-mode .mcq-btn {
-    color: var(--primary-color);
-}
-/* 【新增结束】 */
 
 .quiz-footer {
     margin-top: 2rem;
@@ -326,9 +352,6 @@ header {
     align-items: center;
     gap: 1rem;
 }
-
-
-
 .progress-arrow-btn {
     background: none;
     border: none;
@@ -351,6 +374,8 @@ header {
     cursor: grab;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: calc(50% - 16px);
 }
 .progress-bar-container::-webkit-scrollbar {
     display: none;
@@ -375,22 +400,24 @@ header {
     font-size: 0.75rem;
     font-weight: bold;
     color: var(--muted-color);
+    scroll-snap-align: center;
 }
 .progress-dot.correct { background-color: var(--success-color); color: white; }
 .progress-dot.incorrect { background-color: var(--danger-color); color: white; }
 .progress-dot.current {
-    border-color: var(--primary-color);
+    border: 2px solid var(--primary-color);
     transform: scale(1.2);
     color: var(--primary-color);
 }
 
-.btn-end-quiz {
-    border-color: var(--danger-color);
+#quiz-view .btn-end-quiz {
+    border-color: var(--border-color);
     color: var(--danger-color);
+    background-color: transparent;
 }
-.btn-end-quiz:hover {
-    background-color: var(--danger-color);
-    color: white;
+#quiz-view .btn-end-quiz:hover {
+    background-color: rgba(220, 53, 69, 0.15);
+    color: var(--danger-color);
 }
 
 .score-text { font-size: 1.5rem; text-align: center; }
@@ -423,13 +450,29 @@ header {
 /* ============================================= */
 /* 其他页面样式 (Other Pages)                   */
 /* ============================================= */
-/* ... (此处省略其他页面的样式代码，请将这一整块新的Quiz Page样式添加到您现有的CSS文件中) ... */
+/* ... (您文件中的省略号部分，如果有的话，保持不变) ... */
 
-#study-page .main-section {
+
+/* 【最终修正】步骤1：为两个关键容器 (.main-section 和 .study-card-with-nav) 创建一个共享的、统一的布局规则 */
+.main-section,
+.study-card-with-nav {
     max-width: 600px;
-    margin: 0 auto 1rem auto;
     width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative; /* 确保它们都可以作为内部绝对定位元素的参考物 */
 }
+
+/* 我们可以为它们保留各自的底部间距 */
+.main-section {
+    margin-bottom: 1rem;
+}
+.study-card-with-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 
 .study-controls-v2 {
     width: 100%;
@@ -443,7 +486,8 @@ header {
 
 .filter-container {
     position: absolute;
-    right: 0;
+    /* 【最终修正】步骤2：将 right 设置为 1rem，以补偿页面最外层容器的 padding */
+    right: 1rem;
     top: 50%;
     transform: translateY(-50%);
     z-index: 20;
@@ -571,14 +615,6 @@ header {
     justify-content: center;
 }
 
-.study-card-with-nav {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    max-width: 600px;
-    position: relative;
-}
 
 .study-card {
     background-image: linear-gradient(to top, #fcfcfc, #ffffff);
