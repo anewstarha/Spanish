@@ -244,21 +244,19 @@ header {
     gap: 0.75rem;
 }
 
-/* 【最终修正】选项按钮样式更新 */
 .mcq-btn {
-    display: flex; /* 1. 改为Flex布局 */
-    align-items: center; /* 2. 垂直居中对齐圆圈和文字 */
-    gap: 1rem; /* 3. 设置圆圈和文字的间距 */
-    padding: 0.75rem 1rem; /* 4. 调整内边距 */
+    display: flex; 
+    align-items: center; 
+    gap: 1rem; 
+    padding: 0.75rem 1rem; 
     text-align: left;
     background-color: var(--card-background);
     border: 1px solid var(--border-color);
     color: var(--text-color-dark);
     justify-content: flex-start;
 }
-/* 【新增】字母圆圈的样式 */
 .mcq-letter {
-    flex-shrink: 0; /* 防止圆圈被压缩 */
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -270,9 +268,8 @@ header {
     font-weight: bold;
     font-size: 0.9rem;
 }
-/* 【新增】选项文字的样式 */
 .mcq-text {
-    flex-grow: 1; /* 让文字区域占据剩余空间 */
+    flex-grow: 1; 
     line-height: 1.5;
 }
 
@@ -284,7 +281,6 @@ header {
     cursor: not-allowed;
 }
 
-/* 【最终修正】更新正确/错误状态下的样式 */
 .mcq-btn.correct, .mcq-btn.correct:hover {
     background-color: var(--success-color);
     color: white;
@@ -447,23 +443,19 @@ header {
     gap: 1rem;
 }
 
-/* ============================================= */
-/* 其他页面样式 (Other Pages)                   */
-/* ============================================= */
-/* ... (您文件中的省略号部分，如果有的话，保持不变) ... */
 
-
-/* 【最终修正】步骤1：为两个关键容器 (.main-section 和 .study-card-with-nav) 创建一个共享的、统一的布局规则 */
+/* ============================================= */
+/* 首页学习界面 (Study Page)                      */
+/* ============================================= */
 .main-section,
 .study-card-with-nav {
     max-width: 600px;
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    position: relative; /* 确保它们都可以作为内部绝对定位元素的参考物 */
+    position: relative;
 }
 
-/* 我们可以为它们保留各自的底部间距 */
 .main-section {
     margin-bottom: 1rem;
 }
@@ -486,7 +478,6 @@ header {
 
 .filter-container {
     position: absolute;
-    /* 【最终修正】步骤2：将 right 设置为 1rem，以补偿页面最外层容器的 padding */
     right: 1rem;
     top: 50%;
     transform: translateY(-50%);
@@ -660,38 +651,7 @@ header {
     min-height: 2em;
 }
 
-.source-sentence {
-    font-size: 0.9rem;
-    color: var(--muted-color);
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border-color);
-    font-style: italic;
-}
-.source-sentence::before {
-    content: '例句：';
-    font-weight: bold;
-    font-style: normal;
-}
-
-#word-frequency-badge {
-    font-size: 0.8rem;
-    font-weight: bold;
-    color: var(--card-background);
-    background-color: var(--secondary-color);
-    padding: 2px 6px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    line-height: 1;
-    margin-left: 0.5rem;
-    vertical-align: super;
-}
-
-#word-frequency-badge:hover {
-    background-color: var(--primary-color);
-}
-
+/* --- 修改：高亮单词的样式 --- */
 .highlight-word {
     color: #0056b3;
     font-weight: bold;
@@ -701,28 +661,20 @@ header {
     border-radius: 3px;
     padding: 0 2px;
 }
-
 .highlight-word:hover {
     background-color: var(--light-blue-bg);
 }
 
-.highlight-word.playing {
-    background-color: var(--primary-color);
-    color: white;
-    animation: pulse 1s;
-}
-
 .card-actions {
     display: flex;
-    justify-content: center; /* 默认居中朗读组 */
-    align-items: center; /* 确保垂直对齐 */
+    justify-content: center;
+    align-items: center;
     width: 100%;
     margin-top: auto;
     margin-top: 2rem;
-    position: relative; /* 为AI按钮提供定位参考 */
+    position: relative;
 }
 
-/* 【新增】朗读按钮组的样式 */
 .playback-group {
     display: flex;
     justify-content: center;
@@ -736,10 +688,9 @@ header {
     gap: 0.5rem;
 }
 
-/* 【修改】将AI按钮绝对定位到右侧 */
 .action-item-right {
     position: absolute;
-    right: 0; /* 相对于card-actions的右边缘 */
+    right: 0;
     top: 50%;
     transform: translateY(-50%);
 }
@@ -837,6 +788,99 @@ header {
 #delete-sentence-link:hover {
     color: var(--danger-color);
 }
+
+/* ============================================= */
+/* 新增：单词列表视图样式 (Word List View)         */
+/* ============================================= */
+#word-card-container {
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 8px var(--shadow-color);
+    padding: 1rem;
+    width: 100%;
+}
+
+#word-list-container {
+    width: 100%;
+    max-height: 70vh; /* 限制最大高度 */
+    overflow-y: auto; /* 允许滚动 */
+}
+
+.word-list-item {
+    display: flex;
+    align-items: center;
+    padding: 0.8rem 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s;
+}
+.word-list-item:last-child {
+    border-bottom: none;
+}
+.word-list-item:hover {
+    background-color: var(--light-blue-bg);
+}
+
+.mastered-toggle-word {
+    cursor: pointer;
+    color: var(--muted-color);
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+.mastered-toggle-word .mastered-icon {
+    stroke: var(--muted-color);
+    transition: stroke 0.2s, fill 0.2s;
+}
+.mastered-toggle-word:hover .mastered-icon {
+    stroke: var(--text-color);
+}
+.mastered-toggle-word.mastered {
+    color: var(--success-color);
+}
+.mastered-toggle-word.mastered .mastered-icon {
+    stroke: var(--success-color);
+    fill: var(--success-color);
+}
+.mastered-toggle-word.mastered .mastered-icon polyline {
+    stroke: white;
+}
+
+.word-list-item .word-text {
+    flex-grow: 1;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-color-dark);
+    cursor: pointer;
+}
+
+.word-list-item .actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: 1rem;
+}
+
+.icon-btn-list {
+    background: none;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--muted-color);
+    transition: background-color 0.2s, color 0.2s;
+}
+.icon-btn-list:hover {
+    background-color: rgba(0,0,0,0.05);
+    color: var(--primary-color);
+}
+
+
+/* ============================================= */
+/* 认证 & 管理页面 (Auth & Manage Pages)          */
+/* ============================================= */
 
 .auth-container {
     display: flex;
@@ -1072,6 +1116,11 @@ header {
     padding: 2rem;
 }
 
+
+/* ============================================= */
+/* 弹窗 (Modals)                                 */
+/* ============================================= */
+
 .modal {
     display: none;
     position: fixed;
@@ -1231,7 +1280,8 @@ header {
     70% { box-shadow: 0 0 0 10px rgba(0, 123, 255, 0); }
     100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
 }
-/* 【新增】单词AI解释弹窗的专属样式 */
+
+/* --- 修改：单词AI解释弹窗的专属样式 --- */
 .ai-word-modal-content {
     max-width: 700px;
     text-align: left;
@@ -1255,14 +1305,46 @@ header {
     font-size: 1.1rem;
 }
 
+/* --- 新增：IPA音标容器样式 --- */
+#aiWordExplanationContent .ipa-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
 #aiWordExplanationContent .ipa-text {
     font-size: 1.2rem;
     font-family: 'Courier New', Courier, monospace;
 }
+#aiWordExplanationContent .ipa-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+.icon-btn-modal {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--primary-color);
+    transition: background-color 0.2s, color 0.2s;
+}
+.icon-btn-modal:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+.icon-btn-modal.playing {
+    animation: pulse 1s infinite;
+}
+
 
 #aiWordExplanationContent .pronunciation-tip {
     font-style: italic;
     color: var(--muted-color);
+    margin-top: 0.5rem;
 }
 
 #aiWordExplanationContent .conjugation-table {
@@ -1272,10 +1354,11 @@ header {
 #aiWordExplanationContent .conjugation-table li {
     padding: 0.25rem 0;
 }
-/* 【新增】用于将flex容器中的项目推到最右侧 */
+
 .action-item-right {
     margin-left: auto;
 }
+
 @media (max-width: 768px) {
     .logo {
         font-size: 1rem;
