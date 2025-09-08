@@ -1,6 +1,7 @@
+// js/study-main.js
 import { supabase } from './config.js';
 import { protectPage, initializeHeader } from './auth.js';
-import { showCustomConfirm, readText, generateAndUpdateHighFrequencyWords, initializeDropdowns } from './utils.js';
+import { showCustomConfirm, readText, generateAndUpdateHighFrequencyWords, initializeDropdowns, getWordsFromSentence } from './utils.js';
 
 // --- 1. State Management ---
 let currentUser = null;
@@ -8,15 +9,14 @@ let currentStudyMode = 'sentences';
 let allSentences = [], currentFilteredSentences = [], sentenceIndex = 0, sentenceStatusFilter = 'unmastered', sentenceSortOrder = 'sequential';
 let allWords = [], currentFilteredWords = [], wordIndex = 0, wordStatusFilter = 'unmastered', wordSortOrder = 'frequency';
 let wordTranslationMap = new Map();
-
-// --- 为单词列表无限滚动添加状态 ---
+let studySession = null; 
 const WORDS_PER_PAGE = 30;
 let wordListPage = 1;
 let isLoadingMoreWords = false;
 
-
 // --- 2. DOM Elements ---
 const dom = {
+    mainContent: document.getElementById('main-content'),
     filterMenuBtn: document.getElementById('filter-menu-btn'),
     filterPanel: document.getElementById('filter-panel'),
     studyModeSwitcher: document.getElementById('study-mode-switcher'),
@@ -60,10 +60,8 @@ const dom = {
     wordSortOrderGroup: document.getElementById('word-sort-order-group'),
 };
 
-
 async function logStudyEvent(itemId, itemType) {
     if (!currentUser || !itemId || !itemType) return;
-    console.log(`Logging study event: user=${currentUser.id}, item=${itemId}, type=${itemType}`); // 用于调试
     const { error } = await supabase.from('study_log').upsert({ user_id: currentUser.id, item_id: itemId, item_type: itemType, }, { onConflict: 'user_id, item_id, item_type' });
     if (error) { console.error('Error logging study event:', error); }
 }
@@ -91,6 +89,7 @@ async function fetchInitialData() {
 }
 
 function updatePillPosition() {
+    if (!dom.studyModeSwitcher) return;
     const activeButton = dom.studyModeSwitcher.querySelector('button.active');
     if (activeButton && dom.switcherPill) {
         dom.switcherPill.style.width = `${activeButton.offsetWidth}px`;
@@ -98,32 +97,79 @@ function updatePillPosition() {
     }
 }
 
-function renderUI() {
-    const isSentenceMode = currentStudyMode === 'sentences';
-    dom.sentenceFilters.style.display = isSentenceMode ? 'flex' : 'none';
-    dom.wordFilters.style.display = isSentenceMode ? 'none' : 'flex';
+function initializeStudySession() {
+    const sessionData = sessionStorage.getItem('studySession');
+    if (sessionData) {
+        studySession = JSON.parse(sessionData);
+        currentStudyMode = 'sentences';
+        if (dom.studyModeSwitcher) dom.studyModeSwitcher.style.display = 'none';
+        if (dom.filterMenuBtn) dom.filterMenuBtn.style.display = 'none';
+        
+        let progressIndicator = document.getElementById('session-progress');
+        if (!progressIndicator) {
+            progressIndicator = document.createElement('div');
+            progressIndicator.className = 'session-progress';
+            progressIndicator.id = 'session-progress';
+            dom.mainContent.prepend(progressIndicator);
+        }
+    }
+}
 
+function updateSessionProgress() {
+    if (!studySession) return;
+    const progressIndicator = document.getElementById('session-progress');
+    if (progressIndicator) {
+        progressIndicator.innerHTML = `
+            <div class="container">
+                <span class="session-progress-text">专注学习中: ${sentenceIndex + 1} / ${studySession.total}</span>
+                <a id="session-exit-link" class="session-exit-link">退出会话</a>
+            </div>
+        `;
+        document.getElementById('session-exit-link').addEventListener('click', async () => {
+            const confirmation = await showCustomConfirm('确定要退出本次专注学习吗？');
+            if (confirmation) {
+                sessionStorage.removeItem('studySession');
+                window.location.href = 'index.html';
+            }
+        });
+    }
+}
+
+function renderUI() {
+    updateSessionProgress();
+    const isSentenceMode = currentStudyMode === 'sentences';
+    if (dom.sentenceFilters) dom.sentenceFilters.style.display = isSentenceMode ? 'flex' : 'none';
+    if (dom.wordFilters) dom.wordFilters.style.display = isSentenceMode ? 'none' : 'flex';
     if (isSentenceMode) {
-        dom.wordCardContainer.style.display = 'none';
+        if (dom.wordCardContainer) dom.wordCardContainer.style.display = 'none';
         renderSentenceCard();
     } else {
-        dom.sentenceCardContainer.style.display = 'none';
+        if (dom.sentenceCardContainer) dom.sentenceCardContainer.style.display = 'none';
         renderWordList();
     }
 }
 
 function renderSentenceCard() {
     filterAndSortSentences();
+    updateSessionProgress(); 
     if (currentFilteredSentences.length === 0) {
-        dom.sentenceCardContainer.style.display = 'none';
-        dom.emptyMessage.style.display = 'flex';
-        if (sentenceStatusFilter === 'mastered') dom.emptyMessage.textContent = '您还没有掌握任何句子！';
-        else if (sentenceStatusFilter === 'unmastered' && allSentences.length > 0) dom.emptyMessage.textContent = '恭喜！所有句子都已掌握。';
-        else dom.emptyMessage.textContent = '您的句子列表为空，请在“管理”页面添加新句子。';
+        if(dom.sentenceCardContainer) dom.sentenceCardContainer.style.display = 'none';
+        if(dom.emptyMessage) dom.emptyMessage.style.display = 'flex';
+        
+        if (studySession) {
+             dom.emptyMessage.textContent = '无法加载学习会话内容，请返回主页重试。';
+        } else if (sentenceStatusFilter === 'mastered') {
+            dom.emptyMessage.textContent = '您还没有掌握任何句子！';
+        } else if (sentenceStatusFilter === 'unmastered' && allSentences.length > 0) {
+            dom.emptyMessage.textContent = '恭喜！所有句子都已掌握。';
+        } else {
+            dom.emptyMessage.textContent = '您的句子列表为空，请在“管理”页面添加新句子。';
+        }
         return;
     }
-    dom.emptyMessage.style.display = 'none';
-    dom.sentenceCardContainer.style.display = 'flex';
+    if(dom.emptyMessage) dom.emptyMessage.style.display = 'none';
+    if(dom.sentenceCardContainer) dom.sentenceCardContainer.style.display = 'flex';
+    
     const currentSentence = currentFilteredSentences[sentenceIndex];
     const sentenceText = currentSentence.spanish_text;
     const tokens = sentenceText.split(/([,;!?."\s¿¡—:-])/);
@@ -141,22 +187,16 @@ function renderSentenceCard() {
     dom.masteredToggle.classList.toggle('mastered', currentSentence.mastered);
 }
 
-// --- 修改：渲染单词列表的函数，增加标题和备注 ---
 function renderWordList(loadMore = false) {
     if (!loadMore) {
         wordListPage = 1;
         filterAndSortWords();
-        dom.wordListContainer.innerHTML = ''; // 清空列表
-        // 【新增】在这里添加标题和备注
+        dom.wordListContainer.innerHTML = '';
         if (currentFilteredWords.length > 0) {
-            const headerHTML = `
-                <h2 class="word-list-title">单词列表</h2>
-                <p class="word-list-note">点击发音图标以外的地方进入单词学习。</p>
-            `;
+            const headerHTML = `<h2 class="word-list-title">单词列表</h2><p class="word-list-note">点击发音图标以外的地方进入单词学习。</p>`;
             dom.wordListContainer.innerHTML = headerHTML;
         }
     }
-
     if (currentFilteredWords.length === 0) {
         dom.wordCardContainer.style.display = 'none';
         dom.emptyMessage.style.display = 'flex';
@@ -165,26 +205,21 @@ function renderWordList(loadMore = false) {
         else dom.emptyMessage.textContent = '暂无高频词汇，请先添加一些句子。';
         return;
     }
-
     dom.emptyMessage.style.display = 'none';
     dom.wordCardContainer.style.display = 'block';
-
     const startIndex = (wordListPage - 1) * WORDS_PER_PAGE;
     const endIndex = startIndex + WORDS_PER_PAGE;
     const wordsToRender = currentFilteredWords.slice(startIndex, endIndex);
-
     if (wordsToRender.length === 0 && !loadMore) {
         dom.emptyMessage.style.display = 'flex';
         dom.wordCardContainer.style.display = 'none';
-        return; // 【新增】确保没有词时，标题和备注也不显示
+        return;
     }
-
     const fragment = document.createDocumentFragment();
     wordsToRender.forEach(word => {
         const item = document.createElement('div');
         item.className = 'word-list-item';
         item.dataset.wordId = word.id;
-
         item.innerHTML = `
             <div class="mastered-toggle-word ${word.mastered ? 'mastered' : ''}" title="标记已掌握">
                 <svg class="mastered-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-8.79"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
@@ -201,20 +236,30 @@ function renderWordList(loadMore = false) {
         `;
         fragment.appendChild(item);
     });
-
     dom.wordListContainer.appendChild(fragment);
     isLoadingMoreWords = false;
     wordListPage++;
 }
 
-
 function filterAndSortSentences() {
-    let filtered = allSentences;
-    if (sentenceStatusFilter === 'unmastered') filtered = allSentences.filter(s => !s.mastered);
-    else if (sentenceStatusFilter === 'mastered') filtered = allSentences.filter(s => s.mastered);
-    if (sentenceSortOrder === 'random') currentFilteredSentences = [...filtered].sort(() => Math.random() - 0.5);
-    else currentFilteredSentences = filtered;
-    if (sentenceIndex >= currentFilteredSentences.length) sentenceIndex = 0;
+    let sourceData = allSentences;
+    if (studySession) {
+        const sessionIds = new Set(studySession.sentenceIds);
+        sourceData = allSentences.filter(s => sessionIds.has(s.id));
+    }
+    let filtered = sourceData;
+    if (!studySession && sentenceStatusFilter !== 'all') {
+        if (sentenceStatusFilter === 'unmastered') filtered = sourceData.filter(s => !s.mastered);
+        else if (sentenceStatusFilter === 'mastered') filtered = sourceData.filter(s => s.mastered);
+    }
+    if (!studySession && sentenceSortOrder === 'random') {
+        currentFilteredSentences = [...filtered].sort(() => Math.random() - 0.5);
+    } else {
+        currentFilteredSentences = filtered;
+    }
+    if (sentenceIndex >= currentFilteredSentences.length) {
+        sentenceIndex = 0;
+    }
 }
 
 function filterAndSortWords() {
@@ -224,6 +269,80 @@ function filterAndSortWords() {
     if (wordSortOrder === 'random') currentFilteredWords = [...filtered].sort(() => Math.random() - 0.5);
     else currentFilteredWords = [...filtered].sort((a, b) => b.frequency - a.frequency);
     wordIndex = 0;
+}
+
+function handleCardNavigation(direction) {
+    if (currentFilteredSentences.length === 0) return;
+    logStudyEvent(currentFilteredSentences[sentenceIndex].id, 'sentence');
+    if (studySession) {
+        if (sentenceIndex === studySession.total - 1 && direction === 'next') {
+            showSessionEndModal();
+            return;
+        }
+    }
+    const oldIndex = sentenceIndex;
+    if (direction === 'next') {
+        sentenceIndex = (sentenceIndex < currentFilteredSentences.length - 1) ? sentenceIndex + 1 : 0;
+    } else {
+        sentenceIndex = (sentenceIndex > 0) ? sentenceIndex - 1 : currentFilteredSentences.length - 1;
+    }
+    if (oldIndex !== sentenceIndex) {
+        renderSentenceCard();
+        const currentSentence = currentFilteredSentences[sentenceIndex];
+        if (currentSentence && !studySession) {
+            supabase.from('profiles').update({ last_sentence_id: currentSentence.id, updated_at: new Date() }).eq('id', currentUser.id).then();
+        }
+    }
+}
+
+async function showSessionEndModal() {
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmMessage = document.getElementById('confirmMessage');
+    const confirmBtn = document.getElementById('confirmBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    confirmMessage.innerHTML = `
+        <p style="font-size: 1.2rem; margin-bottom: 2rem;">本次学习已完成！<br>接下来您想做什么？</p>
+        <div class="modal-multi-choice">
+            <button id="session-action-quiz-mixed" class="btn btn-primary">开始综合测试</button>
+            <button id="session-action-quiz-sentence" class="btn btn-secondary">只测句子</button>
+            <button id="session-action-quiz-word" class="btn btn-secondary">只测单词</button>
+            <button id="session-action-restart" class="btn btn-secondary">重新学习本轮</button>
+            <button id="session-action-home" class="btn btn-secondary">返回主页</button>
+        </div>
+    `;
+    confirmBtn.style.display = 'none';
+    cancelBtn.style.display = 'none';
+    confirmModal.style.display = 'flex';
+    const closeModal = () => {
+        confirmModal.style.display = 'none';
+        confirmMessage.innerHTML = '<p id="confirmMessage"></p>'; 
+        confirmBtn.style.display = 'inline-flex';
+        cancelBtn.style.display = 'inline-flex';
+    };
+    document.getElementById('session-action-quiz-mixed').onclick = () => { startQuizSession('mixed'); closeModal(); };
+    document.getElementById('session-action-quiz-sentence').onclick = () => { startQuizSession('sentence'); closeModal(); };
+    document.getElementById('session-action-quiz-word').onclick = () => { startQuizSession('word'); closeModal(); };
+    document.getElementById('session-action-restart').onclick = () => { sentenceIndex = 0; renderSentenceCard(); closeModal(); };
+    document.getElementById('session-action-home').onclick = () => { sessionStorage.removeItem('studySession'); window.location.href = 'index.html'; closeModal(); };
+}
+
+function startQuizSession(type) {
+    const quizSessionData = { type, sentenceIds: studySession.sentenceIds };
+    if (type === 'word' || type === 'mixed') {
+        const wordSet = new Set();
+        const sessionSentencesText = studySession.sentences.map(s => s.spanish_text);
+        sessionSentencesText.forEach(text => {
+            const wordsInSentence = getWordsFromSentence(text);
+            wordsInSentence.forEach(word => wordSet.add(word));
+        });
+        const wordIds = Array.from(wordSet).map(spanishWord => {
+            const foundWord = allWords.find(w => w.spanish_word === spanishWord);
+            return foundWord ? foundWord.id : null;
+        }).filter(id => id !== null);
+        quizSessionData.wordIds = wordIds;
+    }
+    sessionStorage.setItem('quizSession', JSON.stringify(quizSessionData));
+    window.location.href = 'quiz.html';
 }
 
 async function toggleSentenceMastered() {
@@ -243,26 +362,19 @@ async function toggleSentenceMastered() {
 async function toggleWordMastered(wordId, buttonElement) {
     const word = allWords.find(w => w.id === wordId);
     if (!word) return;
-    
     const newStatus = !word.mastered;
     const { error } = await supabase.from('high_frequency_words').update({ mastered: newStatus }).eq('id', wordId).eq('user_id', currentUser.id);
-
     if (error) {
         console.error('更新单词掌握状态失败:', error);
         await showCustomConfirm('更新掌握状态失败。');
     } else {
         word.mastered = newStatus;
         buttonElement.classList.toggle('mastered', newStatus);
-        
-        if (wordStatusFilter === 'unmastered' && newStatus) {
-            buttonElement.parentElement.style.display = 'none';
-        }
-         if (wordStatusFilter === 'mastered' && !newStatus) {
+        if ((wordStatusFilter === 'unmastered' && newStatus) || (wordStatusFilter === 'mastered' && !newStatus)) {
             buttonElement.parentElement.style.display = 'none';
         }
     }
 }
-
 
 async function deleteCurrentSentence() {
     if (currentFilteredSentences.length === 0) return;
@@ -416,15 +528,12 @@ async function readSentenceWordByWord() {
 
 async function getAiWordExplanation(word) {
     if (!word) return;
-
     dom.aiWordExplanationTitle.textContent = `“${word.spanish_word}”`;
     dom.aiWordExplanationModal.style.display = 'flex';
-
     if (word.ai_explanation && Object.keys(word.ai_explanation).length > 0) {
         renderAiWordExplanation(word.ai_explanation, word.spanish_word);
         return;
     }
-
     dom.aiWordExplanationContent.innerHTML = `<div class="loading-spinner"></div><p style="text-align: center;">AI 正在生成深度解析，请稍候...</p>`;
     try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -434,19 +543,15 @@ async function getAiWordExplanation(word) {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
             body: JSON.stringify({ word: word.spanish_word, getExplanation: true })
         });
-
         if (!response.ok) throw new Error(`AI 服务错误 (${response.status}): ${await response.text()}`);
-        
         const data = await response.json();
         const { error: updateError } = await supabase.from('high_frequency_words').update({ ai_explanation: data }).eq('id', word.id);
-        
         if (updateError) {
             console.error('Failed to cache AI word explanation:', updateError);
         } else {
             word.ai_explanation = data;
         }
         renderAiWordExplanation(data, word.spanish_word);
-
     } catch (error) {
         console.error('获取 AI 单词解析失败:', error);
         dom.aiWordExplanationContent.innerHTML = `<p>无法连接到 AI 服务。错误详情: ${error.message}</p>`;
@@ -456,72 +561,59 @@ async function getAiWordExplanation(word) {
 function renderAiWordExplanation(data, wordText) {
     let html = '';
     if (data.ipa) {
-        html += `<div class="ai-section">
-            <div class="ai-section-title">发音</div>
-            <div class="ipa-container">
-                <span class="ipa-text">${data.ipa}</span>
-                <div class="ipa-actions">
-                    <button class="icon-btn-modal read-btn" title="朗读">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-                    </button>
-                    <button class="icon-btn-modal slow-read-btn" title="慢速朗读">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                    </button>
-                </div>
-            </div>
-            ${data.pronunciationTip ? `<p class="pronunciation-tip">${data.pronunciationTip}</p>` : ''}
-        </div>`;
+        html += `<div class="ai-section"><div class="ai-section-title">发音</div><div class="ipa-container"><span class="ipa-text">${data.ipa}</span><div class="ipa-actions"><button class="icon-btn-modal read-btn" title="朗读"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></button><button class="icon-btn-modal slow-read-btn" title="慢速朗读"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></button></div></div>${data.pronunciationTip ? `<p class="pronunciation-tip">${data.pronunciationTip}</p>` : ''}</div>`;
     }
     html += `<div class="ai-section"><div class="ai-section-title">核心信息</div><p><strong>词性:</strong> ${data.partOfSpeech || 'N/A'}</p>${data.gender ? `<p><strong>阴阳性:</strong> ${data.gender}</p>` : ''}<p><strong>核心含义:</strong> ${data.coreMeaning || 'N/A'}</p></div>`;
-    if (data.usageNotes) {
-        html += `<div class="ai-section"><div class="ai-section-title">用法与搭配</div><p>${data.usageNotes.replace(/\n/g, '<br>')}</p></div>`;
-    }
-    if (data.conjugationTable && data.conjugationTable.forms && data.conjugationTable.forms.length > 0) {
-        html += `<div class="ai-section"><div class="ai-section-title">${data.conjugationTable.tense || '动词变位'}</div><ul class="conjugation-table">${data.conjugationTable.forms.map(form => `<li>${form}</li>`).join('')}</ul></div>`;
-    }
-    if (data.mnemonic) {
-        html += `<div class="ai-section"><div class="ai-section-title">联想记忆</div><p>${data.mnemonic.replace(/\n/g, '<br>')}</p></div>`;
-    }
+    if (data.usageNotes) { html += `<div class="ai-section"><div class="ai-section-title">用法与搭配</div><p>${data.usageNotes.replace(/\n/g, '<br>')}</p></div>`; }
+    if (data.conjugationTable && data.conjugationTable.forms && data.conjugationTable.forms.length > 0) { html += `<div class="ai-section"><div class="ai-section-title">${data.conjugationTable.tense || '动词变位'}</div><ul class="conjugation-table">${data.conjugationTable.forms.map(form => `<li>${form}</li>`).join('')}</ul></div>`; }
+    if (data.mnemonic) { html += `<div class="ai-section"><div class="ai-section-title">联想记忆</div><p>${data.mnemonic.replace(/\n/g, '<br>')}</p></div>`; }
     if ((data.synonyms && data.synonyms.length > 0) || (data.antonyms && data.antonyms.length > 0)) {
         html += `<div class="ai-section"><div class="ai-section-title">相关词汇</div>`;
-        if (data.synonyms && data.synonyms.length > 0) {
-            html += `<p><strong>近义词:</strong> ${data.synonyms.join(', ')}</p>`;
-        }
-        if (data.antonyms && data.antonyms.length > 0) {
-            html += `<p><strong>反义词:</strong> ${data.antonyms.join(', ')}</p>`;
-        }
+        if (data.synonyms && data.synonyms.length > 0) { html += `<p><strong>近义词:</strong> ${data.synonyms.join(', ')}</p>`; }
+        if (data.antonyms && data.antonyms.length > 0) { html += `<p><strong>反义词:</strong> ${data.antonyms.join(', ')}</p>`; }
         html += `</div>`;
     }
-    
     dom.aiWordExplanationContent.innerHTML = html;
-    
     const modalReadBtn = dom.aiWordExplanationContent.querySelector('.read-btn');
     const modalSlowReadBtn = dom.aiWordExplanationContent.querySelector('.slow-read-btn');
     if (modalReadBtn) modalReadBtn.onclick = () => readText(wordText, false, modalReadBtn);
     if (modalSlowReadBtn) modalSlowReadBtn.onclick = () => readText(wordText, true, modalSlowReadBtn);
 }
 
+function initializeWordListContainer() {
+    const oldCard = document.getElementById('word-card');
+    const oldFooter = document.getElementById('word-card-footer');
+    if (oldCard) oldCard.style.display = 'none';
+    if (oldFooter) oldFooter.style.display = 'none';
+    let container = document.getElementById('word-list-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'word-list-container';
+        if (dom.wordCardContainer) dom.wordCardContainer.prepend(container);
+    }
+    dom.wordListContainer = container;
+}
 
 function setupEventListeners() {
     if (dom.filterMenuBtn) dom.filterMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); dom.filterPanel.classList.toggle('is-visible'); });
     document.addEventListener('click', (e) => { if (dom.filterPanel && dom.filterPanel.classList.contains('is-visible') && !dom.filterMenuBtn.contains(e.target) && !dom.filterPanel.contains(e.target)) { dom.filterPanel.classList.remove('is-visible'); } });
     if (dom.studyModeSwitcher) dom.studyModeSwitcher.addEventListener('click', (e) => { if (e.target.tagName !== 'BUTTON' || e.target.classList.contains('active')) return; currentStudyMode = e.target.dataset.mode; supabase.from('profiles').update({ last_study_mode: currentStudyMode }).eq('id', currentUser.id).then(); const activeButton = dom.studyModeSwitcher.querySelector(`[data-mode="${currentStudyMode}"]`); if (activeButton && !activeButton.classList.contains('active')) { dom.studyModeSwitcher.querySelector('.active')?.classList.remove('active'); activeButton.classList.add('active'); } updatePillPosition(); renderUI(); });
-    
     if (dom.sentenceStatusFilterGroup) dom.sentenceStatusFilterGroup.addEventListener('click', (e) => { if (e.target.tagName !== 'BUTTON') return; sentenceStatusFilter = e.target.dataset.value; dom.sentenceStatusFilterGroup.querySelector('.active').classList.remove('active'); e.target.classList.add('active'); renderSentenceCard(); });
     if (dom.sentenceSortOrderGroup) dom.sentenceSortOrderGroup.addEventListener('click', (e) => { if (e.target.tagName !== 'BUTTON') return; sentenceSortOrder = e.target.dataset.value; dom.sentenceSortOrderGroup.querySelector('.active').classList.remove('active'); e.target.classList.add('active'); renderSentenceCard(); });
     if (dom.wordStatusFilterGroup) dom.wordStatusFilterGroup.addEventListener('click', (e) => { if (e.target.tagName !== 'BUTTON') return; wordStatusFilter = e.target.dataset.value; dom.wordStatusFilterGroup.querySelector('.active').classList.remove('active'); e.target.classList.add('active'); renderWordList(); });
     if (dom.wordSortOrderGroup) dom.wordSortOrderGroup.addEventListener('click', (e) => { if (e.target.tagName !== 'BUTTON') return; wordSortOrder = e.target.dataset.value; dom.wordSortOrderGroup.querySelector('.active').classList.remove('active'); e.target.classList.add('active'); renderWordList(); });
-
-    if (dom.sentenceCard) dom.sentenceCard.addEventListener('click', (e) => { if (e.target.closest('.card-actions, .card-footer, .highlight-word')) return; const rect = dom.sentenceCard.getBoundingClientRect(); if (currentFilteredSentences.length > 0) { logStudyEvent(currentFilteredSentences[sentenceIndex].id, 'sentence'); } const oldIndex = sentenceIndex; sentenceIndex = e.clientX < (rect.left + rect.width / 2) ? (sentenceIndex > 0 ? sentenceIndex - 1 : currentFilteredSentences.length - 1) : (sentenceIndex < currentFilteredSentences.length - 1 ? sentenceIndex + 1 : 0); if (oldIndex !== sentenceIndex) { renderSentenceCard(); const currentSentence = currentFilteredSentences[sentenceIndex]; if (currentSentence) { supabase.from('profiles').update({ last_sentence_id: currentSentence.id, updated_at: new Date() }).eq('id', currentUser.id).then(); } } });
-
-    // --- 修改：为高亮单词的点击事件绑定新功能，并记录学习事件 ---
+    if (dom.sentenceCard) dom.sentenceCard.addEventListener('click', (e) => {
+        if (e.target.closest('.card-actions, .card-footer, .highlight-word')) return;
+        const rect = dom.sentenceCard.getBoundingClientRect();
+        const direction = e.clientX < (rect.left + rect.width / 2) ? 'prev' : 'next';
+        handleCardNavigation(direction);
+    });
     if (dom.sentenceSpanishText) dom.sentenceSpanishText.addEventListener('click', (event) => {
         if (event.target.classList.contains('highlight-word')) {
             event.stopPropagation();
             const wordText = event.target.dataset.word;
             const wordObject = allWords.find(w => w.spanish_word === wordText);
             if (wordObject) {
-                // 【新增】记录学习事件
                 logStudyEvent(wordObject.id, 'word');
                 getAiWordExplanation(wordObject);
             } else {
@@ -529,19 +621,15 @@ function setupEventListeners() {
             }
         }
     });
-
     if (dom.wordListContainer) {
         dom.wordListContainer.addEventListener('click', (e) => {
             const target = e.target;
             const listItem = target.closest('.word-list-item');
             if (!listItem) return;
-
             const wordId = parseInt(listItem.dataset.wordId, 10);
             const word = allWords.find(w => w.id === wordId);
             if (!word) return;
-            
             supabase.from('profiles').update({ last_word_id: word.id, updated_at: new Date() }).eq('id', currentUser.id).then();
-
             if (target.closest('.mastered-toggle-word')) {
                 toggleWordMastered(wordId, target.closest('.mastered-toggle-word'));
             } else if (target.closest('.read-btn')) {
@@ -549,12 +637,10 @@ function setupEventListeners() {
             } else if (target.closest('.slow-read-btn')) {
                 readText(word.spanish_word, true, target.closest('.slow-read-btn'));
             } else if (target.closest('.word-text')) {
-                // 【新增】记录学习事件
                 logStudyEvent(word.id, 'word');
                 getAiWordExplanation(word);
             }
         });
-
         dom.wordListContainer.addEventListener('scroll', () => {
             if (isLoadingMoreWords) return;
             const { scrollTop, scrollHeight, clientHeight } = dom.wordListContainer;
@@ -567,17 +653,14 @@ function setupEventListeners() {
             }
         });
     }
-
     if (dom.addSentenceLink) dom.addSentenceLink.addEventListener('click', () => { resetAddSentenceModal(); dom.addSentenceModal.style.display = 'flex'; });
     if (dom.editSentenceLink) dom.editSentenceLink.addEventListener('click', openEditSentenceModal);
     if (dom.deleteSentenceLink) dom.deleteSentenceLink.addEventListener('click', deleteCurrentSentence);
     if (dom.masteredToggle) dom.masteredToggle.addEventListener('click', (e) => { e.stopPropagation(); toggleSentenceMastered(); });
-    
     if (dom.sentenceReadBtn) dom.sentenceReadBtn.addEventListener('click', () => readText(currentFilteredSentences[sentenceIndex]?.spanish_text, false, dom.sentenceReadBtn));
     if (dom.sentenceSlowReadBtn) dom.sentenceSlowReadBtn.addEventListener('click', () => readText(currentFilteredSentences[sentenceIndex]?.spanish_text, true, dom.sentenceSlowReadBtn));
     if (dom.sentenceWordReadBtn) dom.sentenceWordReadBtn.addEventListener('click', readSentenceWordByWord);
     if (dom.sentenceAiExplainBtn) dom.sentenceAiExplainBtn.addEventListener('click', getAiSentenceExplanation);
-    
     if (dom.addSentenceForm) dom.addSentenceForm.addEventListener('submit', handleAddSentence);
     if (dom.addSentenceForm) dom.addSentenceForm.querySelector('#cancel-add-btn').addEventListener('click', () => dom.addSentenceModal.style.display = 'none');
     if (dom.editSentenceForm) dom.editSentenceForm.addEventListener('submit', handleEditSentence);
@@ -587,22 +670,6 @@ function setupEventListeners() {
     if (dom.sentenceListCloseBtn) dom.sentenceListCloseBtn.addEventListener('click', () => dom.sentenceListModal.style.display = 'none');
 }
 
-function initializeWordListContainer() {
-    const oldCard = document.getElementById('word-card');
-    const oldFooter = dom.wordCardContainer.querySelector('.card-footer');
-    if (oldCard) oldCard.style.display = 'none';
-    if (oldFooter) oldFooter.style.display = 'none';
-    
-    let container = document.getElementById('word-list-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'word-list-container';
-        dom.wordCardContainer.prepend(container);
-    }
-    dom.wordListContainer = container;
-}
-
-
 async function initializePage() {
     currentUser = await protectPage();
     if (!currentUser) return;
@@ -610,26 +677,50 @@ async function initializePage() {
     await initializeHeader(currentUser);
     initializeDropdowns();
     initializeWordListContainer();
+    initializeStudySession();
 
     const success = await fetchInitialData();
     if (success) {
-        const { data: profile } = await supabase.from('profiles').select('last_sentence_id, last_word_id, last_study_mode').eq('id', currentUser.id).single();
-        if (profile) {
-            if (profile.last_study_mode === 'words') { currentStudyMode = 'words'; }
-            if (profile.last_sentence_id) { const lastSentenceIndex = allSentences.findIndex(s => s.id === profile.last_sentence_id); if (lastSentenceIndex !== -1) sentenceIndex = lastSentenceIndex; }
-            if (profile.last_word_id) { const lastWordIndex = allWords.findIndex(w => w.id === profile.last_word_id); if (lastWordIndex !== -1) wordIndex = lastWordIndex; }
-        }
         const targetSentenceId = sessionStorage.getItem('targetSentenceId');
+        
         if (targetSentenceId) {
-            const targetIndex = allSentences.findIndex(s => s.id == targetSentenceId);
-            if (targetIndex !== -1) { sentenceIndex = targetIndex; currentStudyMode = 'sentences'; }
             sessionStorage.removeItem('targetSentenceId');
+            const targetSentence = allSentences.find(s => s.id == targetSentenceId);
+            if (targetSentence) {
+                if (targetSentence.mastered && sentenceStatusFilter === 'unmastered') {
+                    sentenceStatusFilter = 'all';
+                    if(dom.sentenceStatusFilterGroup){
+                        dom.sentenceStatusFilterGroup.querySelector('.active')?.classList.remove('active');
+                        dom.sentenceStatusFilterGroup.querySelector(`[data-value="all"]`).classList.add('active');
+                    }
+                }
+                filterAndSortSentences();
+                const targetIndex = currentFilteredSentences.findIndex(s => s.id == targetSentenceId);
+                if (targetIndex !== -1) {
+                    sentenceIndex = targetIndex;
+                }
+                currentStudyMode = 'sentences';
+            }
+        } else if (!studySession) {
+            const { data: profile } = await supabase.from('profiles').select('last_sentence_id, last_word_id, last_study_mode').eq('id', currentUser.id).single();
+            if (profile) {
+                if (profile.last_study_mode === 'words') { currentStudyMode = 'words'; }
+                if (profile.last_sentence_id) { 
+                    const lastSentenceIndex = allSentences.findIndex(s => s.id === profile.last_sentence_id); 
+                    if (lastSentenceIndex !== -1) sentenceIndex = lastSentenceIndex; 
+                }
+            }
         }
-        const activeButton = dom.studyModeSwitcher.querySelector(`[data-mode="${currentStudyMode}"]`);
-        if (activeButton && !activeButton.classList.contains('active')) {
-            dom.studyModeSwitcher.querySelector('.active')?.classList.remove('active');
-            activeButton.classList.add('active');
+        
+        if(dom.studyModeSwitcher){
+            const activeButton = dom.studyModeSwitcher.querySelector(`[data-mode="${currentStudyMode}"]`);
+            if (activeButton && !activeButton.classList.contains('active')) {
+                const currentActive = dom.studyModeSwitcher.querySelector('.active');
+                if(currentActive) currentActive.classList.remove('active');
+                activeButton.classList.add('active');
+            }
         }
+
         setupEventListeners();
         renderUI();
         updatePillPosition();

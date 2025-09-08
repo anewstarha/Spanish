@@ -45,7 +45,7 @@ function renderManageSentences(sentencesToRender) {
         `;
         li.addEventListener('click', () => {
             sessionStorage.setItem('targetSentenceId', sentence.id);
-            window.location.href = 'index.html';
+            window.location.href = 'study.html';
         });
         dom.sentenceList.appendChild(li);
     });
