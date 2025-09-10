@@ -35,10 +35,6 @@
             <div class="container main-content-container">
                 <section class="main-section">
                     <div class="study-controls-v2">
-                        <div class="autoplay-container">
-                            <button class="btn btn-autoplay-toggle" id="autoplay-toggle-btn">自动朗读: 关</button>
-                        </div>
-
                         <div id="study-mode-switcher" class="mode-switcher">
                             <div class="switcher-pill" id="switcher-pill"></div>
                             <button data-mode="sentences" class="active">句子学习</button>
@@ -46,44 +42,58 @@
                         </div>
 
                         <div class="filter-container">
-                            <button class="icon-btn-header" id="filter-menu-btn" title="筛选与排序">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                            <button class="icon-btn-header" id="filter-menu-btn" title="显示选项">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                             </button>
+                            
                             <div class="actions-panel" id="filter-panel">
-                                 <div id="sentence-filters" class="control-group-wrapper">
+                                 <h4>显示选项</h4>
+                                 <div class="control-group-wrapper" id="autoplay-section">
                                     <div class="control-group">
-                                        <label class="control-label">筛选：</label>
-                                        <div id="status-filter-group" class="segmented-control">
-                                            <button data-value="all">所有</button>
-                                            <button data-value="unmastered" class="active">未掌握</button>
-                                            <button data-value="mastered">已掌握</button>
+                                        <label class="control-label">自动朗读</label>
+                                        <button class="btn btn-autoplay-toggle" id="autoplay-toggle-btn">关</button>
+                                    </div>
+                                    <hr class="dropdown-divider">
+                                 </div>
+                                 
+                                 <div class="control-group-wrapper">
+                                    <label class="control-label" style="margin-bottom: 0.5rem; text-align: left; width: 100%;">筛选与排序</label>
+                                    <div id="sentence-filters" class="control-group-wrapper">
+                                        <div class="control-group">
+                                            <label class="control-label">状态：</label>
+                                            <div id="status-filter-group" class="segmented-control">
+                                                <button data-value="all">所有</button>
+                                                <button data-value="unmastered" class="active">未掌握</button>
+                                                <button data-value="mastered">已掌握</button>
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label">排序：</label>
+                                            <div id="sort-order-group" class="segmented-control">
+                                                <button data-value="sequential" class="active">顺序</button>
+                                                <button data-value="random">随机</button>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="control-group">
-                                        <label class="control-label">模式：</label>
-                                        <div id="sort-order-group" class="segmented-control">
-                                            <button data-value="sequential" class="active">顺序</button>
-                                            <button data-value="random">随机</button>
+                                    <div id="word-filters" class="control-group-wrapper" style="display: none;">
+                                        <div class="control-group">
+                                            <label class="control-label">状态：</label>
+                                            <div id="word-status-filter-group" class="segmented-control">
+                                                <button data-value="all">所有</button>
+                                                <button data-value="unmastered" class="active">未掌握</button>
+                                                <button data-value="mastered">已掌握</button>
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label">排序：</label>
+                                            <div id="word-sort-order-group" class="segmented-control">
+                                                <button data-value="frequency" class="active">按频率</button>
+                                                <button data-value="sequential">顺序</button>
+                                                <button data-value="random">随机</button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div id="word-filters" class="control-group-wrapper" style="display: none;">
-                                    <div class="control-group">
-                                        <label class="control-label">筛选：</label>
-                                        <div id="word-status-filter-group" class="segmented-control">
-                                            <button data-value="all">所有</button>
-                                            <button data-value="unmastered" class="active">未掌握</button>
-                                            <button data-value="mastered">已掌握</button>
-                                        </div>
-                                    </div>
-                                    <div class="control-group">
-                                        <label class="control-label">排序：</label>
-                                        <div id="word-sort-order-group" class="segmented-control">
-                                            <button data-value="frequency" class="active">按频率</button>
-                                            <button data-value="random">随机</button>
-                                        </div>
-                                    </div>
-                                </div>
+                                 </div>
                             </div>
                         </div>
                     </div>

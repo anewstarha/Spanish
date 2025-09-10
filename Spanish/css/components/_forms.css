@@ -1,0 +1,119 @@
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+    color: var(--text-color-dark);
+    font-size: 0.95rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-small);
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--primary-light-alpha-20);
+    outline: none;
+}
+
+.error-text {
+    color: var(--danger-color);
+    min-height: 1.2em;
+    text-align: center;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+/* 智能标签输入器 (Smart Tag Input) */
+.tag-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.tag-input-area {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-small);
+    min-height: 40px;
+    cursor: text;
+}
+
+.tag-input-area:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--primary-light-alpha-20);
+}
+
+.tag-pill {
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+}
+
+.remove-tag-btn {
+    margin-left: 0.4rem;
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0;
+    opacity: 0.7;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.tag-input-field {
+    border: none;
+    outline: none;
+    flex-grow: 1;
+    padding: 0.3rem;
+    background: transparent;
+    min-width: 120px;
+}
+
+.existing-tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: var(--border-radius-small);
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.existing-tags-list .list-title {
+    width: 100%;
+    font-size: 0.85rem;
+    color: var(--muted-color);
+    margin-bottom: 0.25rem;
+}
+
+.existing-tag-pill {
+    background-color: #e9ecef;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.existing-tag-pill:hover {
+    background-color: var(--light-blue-bg);
+}

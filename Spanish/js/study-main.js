@@ -1,5 +1,3 @@
-// js/study-main.js
-
 import { supabase } from './config.js';
 import { protectPage, initializeHeader } from './auth.js';
 import { showCustomConfirm, readText, generateAndUpdateHighFrequencyWords, initializeDropdowns, getWordsFromSentence, unlockAudioContext } from './utils.js';
@@ -16,6 +14,7 @@ let isAutoplayEnabled = false;
 const WORDS_PER_PAGE = 30;
 let wordListPage = 1;
 let isLoadingMoreWords = false;
+let dynamicWordFrequencies = new Map();
 
 // --- 2. DOM Elements ---
 const dom = {};
@@ -24,7 +23,6 @@ let studyProgressContainer = null;
 function populateDomObject() {
     Object.assign(dom, {
         mainContent: document.getElementById('main-content'),
-        autoplayContainer: document.querySelector('.autoplay-container'),
         autoplayToggleBtn: document.getElementById('autoplay-toggle-btn'),
         studyControls: document.querySelector('.study-controls-v2'),
         filterMenuBtn: document.getElementById('filter-menu-btn'),
@@ -71,8 +69,32 @@ function populateDomObject() {
     });
 }
 
-
 // --- 3. Core Logic ---
+
+function calculateDynamicFrequencies() {
+    dynamicWordFrequencies.clear();
+    if (currentFilteredSentences.length === 0) return;
+
+    for (const sentence of currentFilteredSentences) {
+        const words = getWordsFromSentence(sentence.spanish_text);
+        for (const word of words) {
+            dynamicWordFrequencies.set(word, (dynamicWordFrequencies.get(word) || 0) + 1);
+        }
+    }
+}
+
+function updateDrawerContext() {
+    const isSentenceMode = currentStudyMode === 'sentences';
+    const autoplaySection = document.getElementById('autoplay-section');
+    if (autoplaySection) {
+        autoplaySection.style.display = isSentenceMode ? 'block' : 'none';
+    }
+    const sentenceFilters = document.getElementById('sentence-filters');
+    const wordFilters = document.getElementById('word-filters');
+    if (sentenceFilters) sentenceFilters.style.display = isSentenceMode ? 'flex' : 'none';
+    if (wordFilters) wordFilters.style.display = isSentenceMode ? 'none' : 'flex';
+}
+
 function setupAutoplay() {
     isAutoplayEnabled = false;
     updateAutoplayButton();
@@ -80,9 +102,8 @@ function setupAutoplay() {
 }
 
 function updateAutoplayButton() {
-    dom.autoplayToggleBtn.textContent = `自动朗读: ${isAutoplayEnabled ? '开' : '关'}`;
+    dom.autoplayToggleBtn.textContent = isAutoplayEnabled ? '开' : '关';
     dom.autoplayToggleBtn.classList.toggle('active', isAutoplayEnabled);
-    dom.autoplayToggleBtn.title = isAutoplayEnabled ? '自动朗读已开启' : '开启自动朗读';
 }
 
 function toggleAutoplay() {
@@ -115,10 +136,8 @@ async function logStudyEvent(itemId, itemType) {
 
 async function fetchInitialData() {
     dom.emptyMessage.textContent = '加载中...';
-    const sentencePromise = supabase.from('sentences').select('*').eq('user_id', currentUser.id).order('id', {
-        ascending: true
-    });
-    const wordPromise = supabase.from('high_frequency_words').select('*').eq('user_id', currentUser.id);
+    const sentencePromise = supabase.from('sentences').select('*').eq('user_id', currentUser.id).order('id', { ascending: true });
+    const wordPromise = supabase.from('high_frequency_words').select('*').eq('user_id', currentUser.id).order('id', { ascending: true });
     const wordMapPromise = supabase.from('high_frequency_words').select('spanish_word, chinese_translation').eq('user_id', currentUser.id);
     const [{ data: sentencesData, error: sentencesError }, { data: wordsData, error: wordsError }, { data: wordMapData, error: wordMapError }] = await Promise.all([sentencePromise, wordPromise, wordMapPromise]);
     if (sentencesError || wordsError || wordMapError) {
@@ -197,7 +216,6 @@ function updateStudyProgressBar() {
 
 function filterAndSortSentences() {
     let sourceData = studySession ? allSentences.filter(s => new Set(studySession.sentenceIds).has(s.id)) : allSentences;
-
     let filtered = sourceData;
     if (sentenceStatusFilter !== 'all') {
         if (sentenceStatusFilter === 'unmastered') filtered = sourceData.filter(s => !s.mastered);
@@ -209,15 +227,14 @@ function filterAndSortSentences() {
     } else {
         currentFilteredSentences = [...filtered].sort((a, b) => a.id - b.id);
     }
-
     if (sentenceIndex >= currentFilteredSentences.length) {
         sentenceIndex = 0;
     }
-
     seenInThisSession.clear();
     if (currentFilteredSentences.length > 0) {
         seenInThisSession.add(currentFilteredSentences[sentenceIndex].id);
     }
+    calculateDynamicFrequencies();
 }
 
 function handleCardNavigation(direction) {
@@ -260,9 +277,6 @@ function handleCardNavigation(direction) {
 
 function renderUI() {
     const isSentenceMode = currentStudyMode === 'sentences';
-    if (dom.autoplayContainer) dom.autoplayContainer.style.display = isSentenceMode ? 'block' : 'none';
-    if (dom.sentenceFilters) dom.sentenceFilters.style.display = isSentenceMode ? 'flex' : 'none';
-    if (dom.wordFilters) dom.wordFilters.style.display = isSentenceMode ? 'none' : 'flex';
 
     if (isSentenceMode) {
         if (dom.wordCardContainer) dom.wordCardContainer.style.display = 'none';
@@ -378,16 +392,32 @@ function filterAndSortWords() {
         });
         sourceData = allWords.filter(wordObj => sessionWordSet.has(wordObj.spanish_word));
     }
-
     let filtered = sourceData;
     if (wordStatusFilter !== 'all') {
         if (wordStatusFilter === 'unmastered') filtered = sourceData.filter(w => !w.mastered);
         else if (wordStatusFilter === 'mastered') filtered = sourceData.filter(w => w.mastered);
     }
 
-    if (wordSortOrder === 'random') currentFilteredWords = [...filtered].sort(() => Math.random() - 0.5);
-    else currentFilteredWords = [...filtered].sort((a, b) => b.frequency - a.frequency);
+    const isSentenceFilterActive = sentenceStatusFilter !== 'all' || studySession;
 
+    if (wordSortOrder === 'random') {
+        currentFilteredWords = [...filtered].sort(() => Math.random() - 0.5);
+    } else if (wordSortOrder === 'sequential') {
+        currentFilteredWords = [...filtered].sort((a, b) => a.id - b.id);
+    } else { // frequency
+        if (isSentenceFilterActive && dynamicWordFrequencies.size > 0) {
+            currentFilteredWords = [...filtered].sort((a, b) => {
+                const freqA = dynamicWordFrequencies.get(a.spanish_word) || 0;
+                const freqB = dynamicWordFrequencies.get(b.spanish_word) || 0;
+                if (freqB !== freqA) {
+                    return freqB - freqA;
+                }
+                return a.id - b.id;
+            });
+        } else {
+            currentFilteredWords = [...filtered].sort((a, b) => b.frequency - a.frequency);
+        }
+    }
     wordIndex = 0;
 }
 
@@ -396,9 +426,7 @@ async function showSessionEndModal() {
     const confirmMessage = document.getElementById('confirmMessage');
     const confirmBtn = document.getElementById('confirmBtn');
     const cancelBtn = document.getElementById('cancelBtn');
-
     let titleText = studySession ? "本次学习已完成！" : "恭喜！已学完当前列表！";
-
     confirmMessage.innerHTML = `
         <p style="font-size: 1.2rem; font-weight: 500; text-align: center; margin-bottom: 1.5rem;">${titleText}</p>
         <p style="text-align: center; margin-top: -1rem; margin-bottom: 2rem;">接下来您想做什么？</p>
@@ -413,51 +441,26 @@ async function showSessionEndModal() {
     confirmBtn.style.display = 'none';
     cancelBtn.style.display = 'none';
     confirmModal.style.display = 'flex';
-
     const closeModal = () => {
         confirmModal.style.display = 'none';
         confirmMessage.innerHTML = '<p id="confirmMessage"></p>';
         confirmBtn.style.display = 'inline-flex';
         cancelBtn.style.display = 'inline-flex';
     };
-
-    document.getElementById('session-action-quiz-mixed').onclick = () => {
-        startQuizSession('mixed');
-        closeModal();
-    };
-    document.getElementById('session-action-quiz-sentence').onclick = () => {
-        startQuizSession('sentence');
-        closeModal();
-    };
-    document.getElementById('session-action-quiz-word').onclick = () => {
-        startQuizSession('word');
-        closeModal();
-    };
-    document.getElementById('session-action-restart').onclick = () => {
-        sentenceIndex = 0;
-        filterAndSortSentences();
-        renderSentenceCard();
-        closeModal();
-    };
-    document.getElementById('session-action-home').onclick = () => {
-        sessionStorage.removeItem('studySession');
-        window.location.href = 'index.html';
-        closeModal();
-    };
+    document.getElementById('session-action-quiz-mixed').onclick = () => { startQuizSession('mixed'); closeModal(); };
+    document.getElementById('session-action-quiz-sentence').onclick = () => { startQuizSession('sentence'); closeModal(); };
+    document.getElementById('session-action-quiz-word').onclick = () => { startQuizSession('word'); closeModal(); };
+    document.getElementById('session-action-restart').onclick = () => { sentenceIndex = 0; filterAndSortSentences(); renderSentenceCard(); closeModal(); };
+    document.getElementById('session-action-home').onclick = () => { sessionStorage.removeItem('studySession'); window.location.href = 'index.html'; closeModal(); };
 }
 
 function startQuizSession(type) {
     const idsToTest = Array.from(seenInThisSession);
-    const quizSessionData = {
-        type,
-        sentenceIds: idsToTest
-    };
-
+    const quizSessionData = { type, sentenceIds: idsToTest };
     if (type === 'word' || type === 'mixed') {
         const wordSet = new Set();
         const sentencesForQuiz = allSentences.filter(s => idsToTest.includes(s.id));
         const sessionSentencesText = sentencesForQuiz.map(s => s.spanish_text);
-
         sessionSentencesText.forEach(text => {
             const wordsInSentence = getWordsFromSentence(text);
             wordsInSentence.forEach(word => wordSet.add(word));
@@ -476,15 +479,12 @@ async function toggleSentenceMastered() {
     if (currentFilteredSentences.length === 0) return;
     const sentence = currentFilteredSentences[sentenceIndex];
     const newStatus = !sentence.mastered;
-    const { error } = await supabase.from('sentences').update({
-        mastered: newStatus
-    }).eq('id', sentence.id).eq('user_id', currentUser.id);
+    const { error } = await supabase.from('sentences').update({ mastered: newStatus }).eq('id', sentence.id).eq('user_id', currentUser.id);
     if (error) {
         console.error('更新句子掌握状态失败:', error);
         await showCustomConfirm("状态更新失败！");
     } else {
         sentence.mastered = newStatus;
-        
         if (!studySession && sentenceStatusFilter === 'unmastered') {
             const unmasteredSentences = allSentences.filter(s => !s.mastered);
             if (unmasteredSentences.length === 0) {
@@ -500,9 +500,7 @@ async function toggleWordMastered(wordId, buttonElement) {
     const word = allWords.find(w => w.id === wordId);
     if (!word) return;
     const newStatus = !word.mastered;
-    const { error } = await supabase.from('high_frequency_words').update({
-        mastered: newStatus
-    }).eq('id', wordId).eq('user_id', currentUser.id);
+    const { error } = await supabase.from('high_frequency_words').update({ mastered: newStatus }).eq('id', wordId).eq('user_id', currentUser.id);
     if (error) {
         console.error('更新单词掌握状态失败:', error);
         await showCustomConfirm('更新掌握状态失败。');
@@ -552,29 +550,14 @@ async function handleAddSentence(e) {
     const errorEl = document.getElementById('add-sentence-error');
     const submitBtn = document.getElementById('add-sentence-submit-btn');
     if (state === 'input') {
-        if (!spanishText) {
-            errorEl.textContent = '请输入西班牙语句子。';
-            return;
-        }
+        if (!spanishText) { errorEl.textContent = '请输入西班牙语句子。'; return; }
         submitBtn.disabled = true;
         submitBtn.textContent = '翻译中...';
         errorEl.textContent = '';
         try {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) throw new Error("用户未认证");
-            const response = await fetch('https://rvarfascuwvponxwdeoe.supabase.co/functions/v1/explain-sentence', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify({
-                    sentences: [{
-                        spanish_text: spanishText
-                    }],
-                    getTranslation: true
-                })
-            });
+            const response = await fetch('https://rvarfascuwvponxwdeoe.supabase.co/functions/v1/explain-sentence', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }, body: JSON.stringify({ sentences: [{ spanish_text: spanishText }], getTranslation: true }) });
             if (!response.ok) throw new Error(`AI翻译服务出错: ${await response.text()}`);
             const { translatedSentences } = await response.json();
             if (translatedSentences && translatedSentences.length > 0) {
@@ -582,9 +565,7 @@ async function handleAddSentence(e) {
                 document.getElementById('add-chinese-group').style.display = 'block';
                 submitBtn.textContent = '确认保存';
                 form.dataset.state = 'confirm';
-            } else {
-                throw new Error('AI未能返回翻译。');
-            }
+            } else { throw new Error('AI未能返回翻译。'); }
         } catch (error) {
             console.error('获取翻译失败:', error);
             errorEl.textContent = `翻译失败: ${error.message}`;
@@ -594,17 +575,10 @@ async function handleAddSentence(e) {
         }
     } else if (state === 'confirm') {
         const chineseText = document.getElementById('new-chinese-text').value.trim();
-        if (!chineseText) {
-            errorEl.textContent = '中文翻译不能为空。';
-            return;
-        }
+        if (!chineseText) { errorEl.textContent = '中文翻译不能为空。'; return; }
         submitBtn.disabled = true;
         submitBtn.textContent = '保存中...';
-        const { error } = await supabase.from('sentences').insert([{
-            spanish_text: spanishText,
-            chinese_translation: chineseText,
-            user_id: currentUser.id
-        }]);
+        const { error } = await supabase.from('sentences').insert([{ spanish_text: spanishText, chinese_translation: chineseText, user_id: currentUser.id }]);
         if (error) {
             errorEl.textContent = `保存失败: ${error.message}`;
             submitBtn.disabled = false;
@@ -636,18 +610,9 @@ async function handleEditSentence(e) {
     const id = dom.editSentenceForm.querySelector('#edit-sentence-id').value;
     const spanishText = dom.editSentenceForm.querySelector('#edit-spanish-text').value.trim();
     const chineseText = dom.editSentenceForm.querySelector('#edit-chinese-text').value.trim();
-    if (!spanishText || !chineseText) {
-        await showCustomConfirm('西班牙语和中文翻译均不能为空！');
-        return;
-    }
-    const { error } = await supabase.from('sentences').update({
-        spanish_text: spanishText,
-        chinese_translation: chineseText,
-        ai_notes: null
-    }).eq('id', id).eq('user_id', currentUser.id);
-    if (error) {
-        await showCustomConfirm(`更新失败: ${error.message}`);
-    } else {
+    if (!spanishText || !chineseText) { await showCustomConfirm('西班牙语和中文翻译均不能为空！'); return; }
+    const { error } = await supabase.from('sentences').update({ spanish_text: spanishText, chinese_translation: chineseText, ai_notes: null }).eq('id', id).eq('user_id', currentUser.id);
+    if (error) { await showCustomConfirm(`更新失败: ${error.message}`); } else {
         dom.editSentenceModal.style.display = 'none';
         await showCustomConfirm('更新成功！', false);
         setTimeout(() => document.getElementById('confirmModal').style.display = 'none', 1000);
@@ -661,31 +626,16 @@ async function getAiSentenceExplanation() {
     const currentSentence = currentFilteredSentences[sentenceIndex];
     dom.aiExplanationTitle.textContent = `“${currentSentence.spanish_text}”`;
     dom.aiExplanationModal.style.display = 'flex';
-    if (currentSentence.ai_notes) {
-        dom.aiExplanationContent.innerHTML = `<p>${currentSentence.ai_notes.replace(/\n/g, '<br>')}</p>`;
-        return;
-    }
+    if (currentSentence.ai_notes) { dom.aiExplanationContent.innerHTML = `<p>${currentSentence.ai_notes.replace(/\n/g, '<br>')}</p>`; return; }
     dom.aiExplanationContent.innerHTML = `<div class="loading-spinner"></div><p style="text-align: center;">AI 正在生成解释，请稍候...</p>`;
     try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) throw new Error("用户未认证");
-        const response = await fetch('https://rvarfascuwvponxwdeoe.supabase.co/functions/v1/explain-sentence', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({
-                sentence: currentSentence.spanish_text,
-                getExplanation: true
-            })
-        });
+        const response = await fetch('https://rvarfascuwvponxwdeoe.supabase.co/functions/v1/explain-sentence', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }, body: JSON.stringify({ sentence: currentSentence.spanish_text, getExplanation: true }) });
         if (!response.ok) throw new Error(`AI 服务错误 (${response.status}): ${await response.text()}`);
         const result = await response.json();
         const explanation = result.explanation || '未能获取 AI 解释。';
-        await supabase.from('sentences').update({
-            ai_notes: explanation
-        }).eq('id', currentSentence.id);
+        await supabase.from('sentences').update({ ai_notes: explanation }).eq('id', currentSentence.id);
         currentSentence.ai_notes = explanation;
         dom.aiExplanationContent.innerHTML = `<p>${explanation.replace(/\n/g, '<br>')}</p>`;
     } catch (error) {
@@ -713,35 +663,16 @@ async function getAiWordExplanation(word) {
     if (!word) return;
     dom.aiWordExplanationTitle.textContent = `“${word.spanish_word}”`;
     dom.aiWordExplanationModal.style.display = 'flex';
-    if (word.ai_explanation && Object.keys(word.ai_explanation).length > 0) {
-        renderAiWordExplanation(word.ai_explanation, word.spanish_word);
-        return;
-    }
+    if (word.ai_explanation && Object.keys(word.ai_explanation).length > 0) { renderAiWordExplanation(word.ai_explanation, word.spanish_word); return; }
     dom.aiWordExplanationContent.innerHTML = `<div class="loading-spinner"></div><p style="text-align: center;">AI 正在生成深度解析，请稍候...</p>`;
     try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) throw new Error("用户未认证");
-        const response = await fetch('https://rvarfascuwvponxwdeoe.supabase.co/functions/v1/explain-sentence', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({
-                word: word.spanish_word,
-                getExplanation: true
-            })
-        });
+        const response = await fetch('https://rvarfascuwvponxwdeoe.supabase.co/functions/v1/explain-sentence', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }, body: JSON.stringify({ word: word.spanish_word, getExplanation: true }) });
         if (!response.ok) throw new Error(`AI 服务错误 (${response.status}): ${await response.text()}`);
         const data = await response.json();
-        const { error: updateError } = await supabase.from('high_frequency_words').update({
-            ai_explanation: data
-        }).eq('id', word.id);
-        if (updateError) {
-            console.error('Failed to cache AI word explanation:', updateError);
-        } else {
-            word.ai_explanation = data;
-        }
+        const { error: updateError } = await supabase.from('high_frequency_words').update({ ai_explanation: data }).eq('id', word.id);
+        if (updateError) { console.error('Failed to cache AI word explanation:', updateError); } else { word.ai_explanation = data; }
         renderAiWordExplanation(data, word.spanish_word);
     } catch (error) {
         console.error('获取 AI 单词解析失败:', error);
@@ -751,29 +682,12 @@ async function getAiWordExplanation(word) {
 
 function renderAiWordExplanation(data, wordText) {
     let html = '';
-    if (data.ipa) {
-        html += `<div class="ai-section"><div class="ai-section-title">发音</div><div class="ipa-container"><span class="ipa-text">${data.ipa}</span><div class="ipa-actions"><button class="icon-btn-modal read-btn" title="朗读"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></button><button class="icon-btn-modal slow-read-btn" title="慢速朗读"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></button></div></div>${data.pronunciationTip ? `<p class="pronunciation-tip">${data.pronunciationTip}</p>` : ''}</div>`;
-    }
+    if (data.ipa) { html += `<div class="ai-section"><div class="ai-section-title">发音</div><div class="ipa-container"><span class="ipa-text">${data.ipa}</span><div class="ipa-actions"><button class="icon-btn-modal read-btn" title="朗读"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></button><button class="icon-btn-modal slow-read-btn" title="慢速朗读"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></button></div></div>${data.pronunciationTip ? `<p class="pronunciation-tip">${data.pronunciationTip}</p>` : ''}</div>`; }
     html += `<div class="ai-section"><div class="ai-section-title">核心信息</div><p><strong>词性:</strong> ${data.partOfSpeech || 'N/A'}</p>${data.gender ? `<p><strong>阴阳性:</strong> ${data.gender}</p>` : ''}<p><strong>核心含义:</strong> ${data.coreMeaning || 'N/A'}</p></div>`;
-    if (data.usageNotes) {
-        html += `<div class="ai-section"><div class="ai-section-title">用法与搭配</div><p>${data.usageNotes.replace(/\n/g, '<br>')}</p></div>`;
-    }
-    if (data.conjugationTable && data.conjugationTable.forms && data.conjugationTable.forms.length > 0) {
-        html += `<div class="ai-section"><div class="ai-section-title">${data.conjugationTable.tense || '动词变位'}</div><ul class="conjugation-table">${data.conjugationTable.forms.map(form => `<li>${form}</li>`).join('')}</ul></div>`;
-    }
-    if (data.mnemonic) {
-        html += `<div class="ai-section"><div class="ai-section-title">联想记忆</div><p>${data.mnemonic.replace(/\n/g, '<br>')}</p></div>`;
-    }
-    if ((data.synonyms && data.synonyms.length > 0) || (data.antonyms && data.antonyms.length > 0)) {
-        html += `<div class="ai-section"><div class="ai-section-title">相关词汇</div>`;
-        if (data.synonyms && data.synonyms.length > 0) {
-            html += `<p><strong>近义词:</strong> ${data.synonyms.join(', ')}</p>`;
-        }
-        if (data.antonyms && data.antonyms.length > 0) {
-            html += `<p><strong>反义词:</strong> ${data.antonyms.join(', ')}</p>`;
-        }
-        html += `</div>`;
-    }
+    if (data.usageNotes) { html += `<div class="ai-section"><div class="ai-section-title">用法与搭配</div><p>${data.usageNotes.replace(/\n/g, '<br>')}</p></div>`; }
+    if (data.conjugationTable && data.conjugationTable.forms && data.conjugationTable.forms.length > 0) { html += `<div class="ai-section"><div class="ai-section-title">${data.conjugationTable.tense || '动词变位'}</div><ul class="conjugation-table">${data.conjugationTable.forms.map(form => `<li>${form}</li>`).join('')}</ul></div>`; }
+    if (data.mnemonic) { html += `<div class="ai-section"><div class="ai-section-title">联想记忆</div><p>${data.mnemonic.replace(/\n/g, '<br>')}</p></div>`; }
+    if ((data.synonyms && data.synonyms.length > 0) || (data.antonyms && data.antonyms.length > 0)) { html += `<div class="ai-section"><div class="ai-section-title">相关词汇</div>`; if (data.synonyms && data.synonyms.length > 0) { html += `<p><strong>近义词:</strong> ${data.synonyms.join(', ')}</p>`; } if (data.antonyms && data.antonyms.length > 0) { html += `<p><strong>反义词:</strong> ${data.antonyms.join(', ')}</p>`; } html += `</div>`; }
     dom.aiWordExplanationContent.innerHTML = html;
     const modalReadBtn = dom.aiWordExplanationContent.querySelector('.read-btn');
     const modalSlowReadBtn = dom.aiWordExplanationContent.querySelector('.slow-read-btn');
@@ -796,21 +710,13 @@ function initializeWordListContainer() {
 }
 
 function setupEventListeners() {
-    if (dom.filterMenuBtn) dom.filterMenuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dom.filterPanel.classList.toggle('is-visible');
-    });
-    document.addEventListener('click', (e) => {
-        if (dom.filterPanel && dom.filterPanel.classList.contains('is-visible') && !dom.filterMenuBtn.contains(e.target) && !dom.filterPanel.contains(e.target)) {
-            dom.filterPanel.classList.remove('is-visible');
-        }
-    });
+    if (dom.filterMenuBtn) dom.filterMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); dom.filterPanel.classList.toggle('is-visible'); });
+    document.addEventListener('click', (e) => { if (dom.filterPanel && dom.filterPanel.classList.contains('is-visible') && !dom.filterMenuBtn.contains(e.target) && !dom.filterPanel.contains(e.target)) { dom.filterPanel.classList.remove('is-visible'); } });
+
     if (dom.studyModeSwitcher) dom.studyModeSwitcher.addEventListener('click', (e) => {
         if (e.target.tagName !== 'BUTTON' || e.target.classList.contains('active')) return;
         currentStudyMode = e.target.dataset.mode;
-        supabase.from('profiles').update({
-            last_study_mode: currentStudyMode
-        }).eq('id', currentUser.id).then();
+        supabase.from('profiles').update({ last_study_mode: currentStudyMode }).eq('id', currentUser.id).then();
         const activeButton = dom.studyModeSwitcher.querySelector(`[data-mode="${currentStudyMode}"]`);
         if (activeButton && !activeButton.classList.contains('active')) {
             const currentActive = dom.studyModeSwitcher.querySelector('.active');
@@ -819,109 +725,52 @@ function setupEventListeners() {
         }
         updatePillPosition();
         renderUI();
+        updateDrawerContext();
     });
+
     if (dom.sentenceStatusFilterGroup) dom.sentenceStatusFilterGroup.addEventListener('click', (e) => {
-        if (e.target.tagName !== 'BUTTON') return;
+        if (e.target.tagName !== 'BUTTON' || e.target.classList.contains('active')) return;
         sentenceStatusFilter = e.target.dataset.value;
-        const currentActive = dom.sentenceStatusFilterGroup.querySelector('.active');
-        if (currentActive) currentActive.classList.remove('active');
+        dom.sentenceStatusFilterGroup.querySelector('.active').classList.remove('active');
         e.target.classList.add('active');
         filterAndSortSentences();
         renderUI();
     });
+
     if (dom.sentenceSortOrderGroup) dom.sentenceSortOrderGroup.addEventListener('click', (e) => {
-        if (e.target.tagName !== 'BUTTON') return;
+        if (e.target.tagName !== 'BUTTON' || e.target.classList.contains('active')) return;
         sentenceSortOrder = e.target.dataset.value;
-        const currentActive = dom.sentenceSortOrderGroup.querySelector('.active');
-        if (currentActive) currentActive.classList.remove('active');
+        dom.sentenceSortOrderGroup.querySelector('.active').classList.remove('active');
         e.target.classList.add('active');
         filterAndSortSentences();
         renderUI();
     });
+
     if (dom.wordStatusFilterGroup) dom.wordStatusFilterGroup.addEventListener('click', (e) => {
-        if (e.target.tagName !== 'BUTTON') return;
+        if (e.target.tagName !== 'BUTTON' || e.target.classList.contains('active')) return;
         wordStatusFilter = e.target.dataset.value;
-        const currentActive = dom.wordStatusFilterGroup.querySelector('.active');
-        if (currentActive) currentActive.classList.remove('active');
+        dom.wordStatusFilterGroup.querySelector('.active').classList.remove('active');
         e.target.classList.add('active');
         renderUI();
     });
+
     if (dom.wordSortOrderGroup) dom.wordSortOrderGroup.addEventListener('click', (e) => {
-        if (e.target.tagName !== 'BUTTON') return;
+        if (e.target.tagName !== 'BUTTON' || e.target.classList.contains('active')) return;
         wordSortOrder = e.target.dataset.value;
-        const currentActive = dom.wordSortOrderGroup.querySelector('.active');
-        if (currentActive) currentActive.classList.remove('active');
+        dom.wordSortOrderGroup.querySelector('.active').classList.remove('active');
         e.target.classList.add('active');
         renderUI();
     });
-    if (dom.sentenceCard) dom.sentenceCard.addEventListener('click', (e) => {
-        if (e.target.closest('.card-actions, .card-footer, .highlight-word')) return;
-        const rect = dom.sentenceCard.getBoundingClientRect();
-        const direction = e.clientX < (rect.left + rect.width / 2) ? 'prev' : 'next';
-        handleCardNavigation(direction);
-    });
-    if (dom.sentenceSpanishText) dom.sentenceSpanishText.addEventListener('click', (event) => {
-        if (event.target.classList.contains('highlight-word')) {
-            event.stopPropagation();
-            const wordText = event.target.dataset.word;
-            const wordObject = allWords.find(w => w.spanish_word === wordText);
-            if (wordObject) {
-                logStudyEvent(wordObject.id, 'word');
-                getAiWordExplanation(wordObject);
-            } else {
-                showCustomConfirm(`“${wordText}” 不在您的高频词库中。`);
-            }
-        }
-    });
-    if (dom.wordListContainer) {
-        dom.wordListContainer.addEventListener('click', (e) => {
-            const target = e.target;
-            const listItem = target.closest('.word-list-item');
-            if (!listItem) return;
-            const wordId = parseInt(listItem.dataset.wordId, 10);
-            const word = allWords.find(w => w.id === wordId);
-            if (!word) return;
-            supabase.from('profiles').update({
-                last_word_id: word.id,
-                updated_at: new Date()
-            }).eq('id', currentUser.id).then();
-            if (target.closest('.mastered-toggle-word')) {
-                toggleWordMastered(wordId, target.closest('.mastered-toggle-word'));
-            } else if (target.closest('.read-btn')) {
-                readText(word.spanish_word, false, target.closest('.read-btn'));
-            } else if (target.closest('.slow-read-btn')) {
-                readText(word.spanish_word, true, target.closest('.slow-read-btn'));
-            } else if (target.closest('.word-text')) {
-                logStudyEvent(word.id, 'word');
-                getAiWordExplanation(word);
-            }
-        });
-        dom.wordListContainer.addEventListener('scroll', () => {
-            if (isLoadingMoreWords) return;
-            const { scrollTop, scrollHeight, clientHeight } = dom.wordListContainer;
-            if (scrollHeight - scrollTop - clientHeight < 200) {
-                isLoadingMoreWords = true;
-                const totalRendered = (wordListPage - 1) * WORDS_PER_PAGE;
-                if (totalRendered < currentFilteredWords.length) {
-                    renderWordList(true);
-                }
-            }
-        });
-    }
-    if (dom.addSentenceLink) dom.addSentenceLink.addEventListener('click', () => {
-        resetAddSentenceModal();
-        dom.addSentenceModal.style.display = 'flex';
-    });
+    
+    if (dom.sentenceCard) dom.sentenceCard.addEventListener('click', (e) => { if (e.target.closest('.card-actions, .card-footer, .highlight-word')) return; const rect = dom.sentenceCard.getBoundingClientRect(); const direction = e.clientX < (rect.left + rect.width / 2) ? 'prev' : 'next'; handleCardNavigation(direction); });
+    if (dom.sentenceSpanishText) dom.sentenceSpanishText.addEventListener('click', (event) => { if (event.target.classList.contains('highlight-word')) { event.stopPropagation(); const wordText = event.target.dataset.word; const wordObject = allWords.find(w => w.spanish_word === wordText); if (wordObject) { logStudyEvent(wordObject.id, 'word'); getAiWordExplanation(wordObject); } else { showCustomConfirm(`“${wordText}” 不在您的高频词库中。`); } } });
+    if (dom.wordListContainer) { dom.wordListContainer.addEventListener('click', (e) => { const target = e.target; const listItem = target.closest('.word-list-item'); if (!listItem) return; const wordId = parseInt(listItem.dataset.wordId, 10); const word = allWords.find(w => w.id === wordId); if (!word) return; supabase.from('profiles').update({ last_word_id: word.id, updated_at: new Date() }).eq('id', currentUser.id).then(); if (target.closest('.mastered-toggle-word')) { toggleWordMastered(wordId, target.closest('.mastered-toggle-word')); } else if (target.closest('.read-btn')) { readText(word.spanish_word, false, target.closest('.read-btn')); } else if (target.closest('.slow-read-btn')) { readText(word.spanish_word, true, target.closest('.slow-read-btn')); } else if (target.closest('.word-text')) { logStudyEvent(word.id, 'word'); getAiWordExplanation(word); } }); dom.wordListContainer.addEventListener('scroll', () => { if (isLoadingMoreWords) return; const { scrollTop, scrollHeight, clientHeight } = dom.wordListContainer; if (scrollHeight - scrollTop - clientHeight < 200) { isLoadingMoreWords = true; const totalRendered = (wordListPage - 1) * WORDS_PER_PAGE; if (totalRendered < currentFilteredWords.length) { renderWordList(true); } } }); }
+    if (dom.addSentenceLink) dom.addSentenceLink.addEventListener('click', () => { resetAddSentenceModal(); dom.addSentenceModal.style.display = 'flex'; });
     if (dom.editSentenceLink) dom.editSentenceLink.addEventListener('click', openEditSentenceModal);
     if (dom.deleteSentenceLink) dom.deleteSentenceLink.addEventListener('click', deleteCurrentSentence);
-    if (dom.masteredToggle) dom.masteredToggle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleSentenceMastered();
-    });
-    // ====================== 语法修正 开始 ======================
+    if (dom.masteredToggle) dom.masteredToggle.addEventListener('click', (e) => { e.stopPropagation(); toggleSentenceMastered(); });
     if (dom.sentenceReadBtn) dom.sentenceReadBtn.addEventListener('click', () => readText(currentFilteredSentences[sentenceIndex]?.spanish_text, false, dom.sentenceReadBtn));
     if (dom.sentenceSlowReadBtn) dom.sentenceSlowReadBtn.addEventListener('click', () => readText(currentFilteredSentences[sentenceIndex]?.spanish_text, true, dom.sentenceSlowReadBtn));
-    // ====================== 语法修正 结束 ======================
     if (dom.sentenceWordReadBtn) dom.sentenceWordReadBtn.addEventListener('click', readSentenceWordByWord);
     if (dom.sentenceAiExplainBtn) dom.sentenceAiExplainBtn.addEventListener('click', getAiSentenceExplanation);
     if (dom.addSentenceForm) dom.addSentenceForm.addEventListener('submit', handleAddSentence);
@@ -937,10 +786,7 @@ async function initializePage() {
     currentUser = await protectPage();
     if (!currentUser) return;
 
-    // 音频修复：添加一个一次性的全局事件监听器来解锁音频上下文
-    document.body.addEventListener('pointerdown', unlockAudioContext, {
-        once: true
-    });
+    document.body.addEventListener('pointerdown', unlockAudioContext, { once: true });
 
     populateDomObject();
 
@@ -961,53 +807,33 @@ async function initializePage() {
         } else if (!studySession) {
             const { data: profile } = await supabase.from('profiles').select('last_sentence_id, last_study_mode').eq('id', currentUser.id).single();
             if (profile) {
-                if (profile.last_study_mode === 'words') {
-                    currentStudyMode = 'words';
-                }
-                if (profile.last_sentence_id) {
-                    lastSentenceIdToRestore = profile.last_sentence_id;
-                }
+                if (profile.last_study_mode === 'words') { currentStudyMode = 'words'; }
+                if (profile.last_sentence_id) { lastSentenceIdToRestore = profile.last_sentence_id; }
             }
         }
-
+        
         if (lastSentenceIdToRestore) {
             const lastSentence = allSentences.find(s => s.id === lastSentenceIdToRestore);
             if (lastSentence && lastSentence.mastered && sentenceStatusFilter === 'unmastered') {
                 sentenceStatusFilter = 'all';
             }
         }
-
-        if (studySession) {
-            sentenceIndex = 0;
-        }
-
-        if (dom.studyModeSwitcher) {
-            const currentActive = dom.studyModeSwitcher.querySelector('.active');
-            if (currentActive) currentActive.classList.remove('active');
-            
-            const activeButton = dom.studyModeSwitcher.querySelector(`[data-mode="${currentStudyMode}"]`);
-            if (activeButton) activeButton.classList.add('active');
-        }
-
-        if (dom.sentenceStatusFilterGroup) {
-            const currentActive = dom.sentenceStatusFilterGroup.querySelector('.active');
-            if (currentActive) currentActive.classList.remove('active');
-            
-            const newActive = dom.sentenceStatusFilterGroup.querySelector(`[data-value="${sentenceStatusFilter}"]`);
-            if (newActive) newActive.classList.add('active');
-        }
-
+        
+        if (studySession) { sentenceIndex = 0; }
+        
+        if (dom.studyModeSwitcher) { const currentActive = dom.studyModeSwitcher.querySelector('.active'); if (currentActive) currentActive.classList.remove('active'); const activeButton = dom.studyModeSwitcher.querySelector(`[data-mode="${currentStudyMode}"]`); if (activeButton) activeButton.classList.add('active'); }
+        if (dom.sentenceStatusFilterGroup) { const currentActive = dom.sentenceStatusFilterGroup.querySelector('.active'); if (currentActive) currentActive.classList.remove('active'); const newActive = dom.sentenceStatusFilterGroup.querySelector(`[data-value="${sentenceStatusFilter}"]`); if (newActive) newActive.classList.add('active'); }
+        
         filterAndSortSentences();
 
         if (lastSentenceIdToRestore && !studySession) {
             const restoredIndex = currentFilteredSentences.findIndex(s => s.id === lastSentenceIdToRestore);
-            if (restoredIndex !== -1) {
-                sentenceIndex = restoredIndex;
-            }
+            if (restoredIndex !== -1) { sentenceIndex = restoredIndex; }
         }
-
+        
         setupEventListeners();
         renderUI();
+        updateDrawerContext();
     }
 }
 

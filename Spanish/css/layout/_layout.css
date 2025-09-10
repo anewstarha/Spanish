@@ -1,0 +1,15 @@
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* 页面主体内容 (Main Content) */
+.page-container {
+    padding-top: 1rem;
+}
+
+/* 仪表盘页面 (Dashboard Page) */
+.dashboard-container {
+    max-width: 900px;
+}

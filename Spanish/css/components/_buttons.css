@@ -1,0 +1,160 @@
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    font-weight: 500;
+    text-align: center;
+    text-decoration: none;
+    border-radius: var(--border-radius-small);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #0069d9;
+    border-color: #0062cc;
+}
+
+.btn-secondary {
+    background-color: #e9ecef;
+    color: var(--text-color-dark);
+    border-color: #dee2e6;
+}
+
+.btn-secondary:hover {
+    background-color: #dee2e6;
+    border-color: #cfd4d9;
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    color: white;
+    border-color: var(--danger-color);
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+.btn-full-width {
+    width: 100%;
+}
+
+.btn .btn-icon {
+    display: block;
+}
+
+.btn .spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.btn.loading .btn-text, .btn.loading .btn-icon {
+    display: none;
+}
+
+.btn.loading .spinner {
+    display: block;
+}
+
+.icon-btn-header {
+    background: none;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--muted-color);
+    transition: background-color 0.2s, color 0.2s;
+    padding: 0;
+}
+
+.icon-btn-header:hover {
+    background-color: #f0f0f0;
+    color: var(--primary-color);
+}
+
+.user-avatar-btn {
+    background-color: var(--light-blue-bg);
+    color: var(--primary-color);
+}
+
+.user-avatar-btn:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.icon-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    padding: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--primary-color);
+    transition: background-color 0.2s, color 0.2s, transform 0.2s;
+}
+
+.icon-btn:hover {
+    background-color: var(--primary-color);
+    color: var(--card-background);
+    transform: scale(1.1);
+}
+
+.icon-btn.playing {
+    background-color: var(--primary-color);
+    color: var(--card-background);
+    animation: pulse 1s infinite;
+}
+
+.progress-arrow-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted-color);
+    padding: 0.5rem;
+    border-radius: 50%;
+}
+
+.progress-arrow-btn:hover {
+    background-color: #f0f0f0;
+}
+
+.progress-arrow-btn:disabled {
+    color: #e0e0e0;
+    cursor: not-allowed;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    color: #aaa;
+}
+
+.close-button:hover {
+    color: #333;
+}
