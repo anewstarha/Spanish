@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>西班牙语学习助手</title>
+    <title>自由学习 - 西班牙语学习助手</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -35,6 +35,10 @@
             <div class="container main-content-container">
                 <section class="main-section">
                     <div class="study-controls-v2">
+                        <div class="autoplay-container">
+                            <button class="btn btn-autoplay-toggle" id="autoplay-toggle-btn">自动朗读: 关</button>
+                        </div>
+
                         <div id="study-mode-switcher" class="mode-switcher">
                             <div class="switcher-pill" id="switcher-pill"></div>
                             <button data-mode="sentences" class="active">句子学习</button>
@@ -108,11 +112,7 @@
                         </div>
                     </div>
                     <div class="study-card-with-nav" id="word-card-container" style="display: none;">
-                        <div class="study-card" id="word-card" style="display: none;">
-                            </div>
-                        <div class="card-footer" id="word-card-footer" style="display: none;">
-                            </div>
-                    </div>
+                        </div>
                 </section>
             </div>
         </div>

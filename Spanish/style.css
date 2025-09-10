@@ -1813,3 +1813,21 @@ header {
     top: 50%;
     transform: translateY(-50%);
 }
+/* --- 新增：自动播放开关样式 --- */
+.autoplay-container {
+    position: absolute;
+    left: 1rem; /* 将其定位在左侧 */
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+}
+
+#autoplay-toggle-btn.active {
+    color: var(--primary-color);
+    background-color: var(--light-blue-bg);
+}
+
+/* 默认隐藏，JS会根据模式决定是否显示 */
+.autoplay-container {
+    display: none;
+}
