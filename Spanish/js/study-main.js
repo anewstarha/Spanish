@@ -1,6 +1,6 @@
 import { supabase } from './config.js';
 import { protectPage, initializeHeader } from './auth.js';
-import { showCustomConfirm, readText, generateAndUpdateHighFrequencyWords, initializeDropdowns, getWordsFromSentence, unlockAudioContext } from './utils.js';
+import { showCustomConfirm, readText, initializeDropdowns, getWordsFromSentence, unlockAudioContext, syncWordBankForSentenceChange } from './utils.js';
 
 // --- 1. State Management ---
 let currentUser = null;
@@ -515,17 +515,26 @@ async function toggleWordMastered(wordId, buttonElement) {
 
 async function deleteCurrentSentence() {
     if (currentFilteredSentences.length === 0) return;
-    const sentence = currentFilteredSentences[sentenceIndex];
-    const confirmation = await showCustomConfirm(`确定要删除这个句子吗？\n"${sentence.spanish_text}"`);
+    const sentenceToDelete = currentFilteredSentences[sentenceIndex];
+    
+    const confirmation = await showCustomConfirm(`确定要删除这个句子吗？\n"${sentenceToDelete.spanish_text}"`);
     if (confirmation) {
-        const { error } = await supabase.from('sentences').delete().eq('id', sentence.id).eq('user_id', currentUser.id);
+        // 1. 删除句子
+        const { error } = await supabase.from('sentences').delete().eq('id', sentenceToDelete.id).eq('user_id', currentUser.id);
+        
         if (error) {
             await showCustomConfirm('删除失败，请检查网络或刷新页面。');
         } else {
+            // 2. 【修改】调用新的全局函数更新单词库
+            await syncWordBankForSentenceChange({ oldSentenceText: sentenceToDelete.spanish_text });
+
             await showCustomConfirm('删除成功！', false);
             setTimeout(() => document.getElementById('confirmModal').style.display = 'none', 1000);
+            
+            // 3. 刷新数据和UI
             await fetchInitialData();
-            sentenceIndex = 0;
+            sentenceIndex = 0; // 重置索引
+            filterAndSortSentences();
             renderUI();
         }
     }
@@ -549,6 +558,7 @@ async function handleAddSentence(e) {
     const spanishText = document.getElementById('new-spanish-text').value.trim();
     const errorEl = document.getElementById('add-sentence-error');
     const submitBtn = document.getElementById('add-sentence-submit-btn');
+
     if (state === 'input') {
         if (!spanishText) { errorEl.textContent = '请输入西班牙语句子。'; return; }
         submitBtn.disabled = true;
@@ -579,18 +589,33 @@ async function handleAddSentence(e) {
         submitBtn.disabled = true;
         submitBtn.textContent = '保存中...';
         const { error } = await supabase.from('sentences').insert([{ spanish_text: spanishText, chinese_translation: chineseText, user_id: currentUser.id }]);
+        
         if (error) {
             errorEl.textContent = `保存失败: ${error.message}`;
             submitBtn.disabled = false;
             submitBtn.textContent = '确认保存';
         } else {
             dom.addSentenceModal.style.display = 'none';
+
+            // 【修改】调用新的全局函数更新单词库
+            await syncWordBankForSentenceChange({ newSentenceText: spanishText });
+
             await showCustomConfirm('添加成功！', false);
             setTimeout(() => document.getElementById('confirmModal').style.display = 'none', 1000);
+            
             await fetchInitialData();
-            await generateAndUpdateHighFrequencyWords(currentUser.id);
-            sentenceIndex = allSentences.findIndex(s => s.spanish_text === spanishText);
-            if (sentenceIndex === -1) sentenceIndex = 0;
+            filterAndSortSentences(); // 确保显示列表同步
+            
+            // 定位到新添加的句子
+            let newIndex = allSentences.findIndex(s => s.spanish_text === spanishText);
+            if (newIndex === -1) newIndex = allSentences.length - 1; // 备用方案
+            sentenceStatusFilter = 'all'; // 切换到“所有”以确保能看到
+            dom.sentenceStatusFilterGroup.querySelector('.active').classList.remove('active');
+            dom.sentenceStatusFilterGroup.querySelector(`[data-value="all"]`).classList.add('active');
+            filterAndSortSentences(); // 再次筛选以应用新filter
+            newIndex = currentFilteredSentences.findIndex(s => s.spanish_text === spanishText);
+            if (newIndex !== -1) sentenceIndex = newIndex;
+
             renderUI();
         }
     }
@@ -608,15 +633,38 @@ function openEditSentenceModal() {
 async function handleEditSentence(e) {
     e.preventDefault();
     const id = dom.editSentenceForm.querySelector('#edit-sentence-id').value;
-    const spanishText = dom.editSentenceForm.querySelector('#edit-spanish-text').value.trim();
-    const chineseText = dom.editSentenceForm.querySelector('#edit-chinese-text').value.trim();
-    if (!spanishText || !chineseText) { await showCustomConfirm('西班牙语和中文翻译均不能为空！'); return; }
-    const { error } = await supabase.from('sentences').update({ spanish_text: spanishText, chinese_translation: chineseText, ai_notes: null }).eq('id', id).eq('user_id', currentUser.id);
-    if (error) { await showCustomConfirm(`更新失败: ${error.message}`); } else {
+    const oldSentenceText = currentFilteredSentences.find(s => s.id == id)?.spanish_text || '';
+    const newSpanishText = dom.editSentenceForm.querySelector('#edit-spanish-text').value.trim();
+    const newChineseText = dom.editSentenceForm.querySelector('#edit-chinese-text').value.trim();
+
+    if (!newSpanishText || !newChineseText) {
+        await showCustomConfirm('西班牙语和中文翻译均不能为空！');
+        return;
+    }
+
+    // 1. 更新句子本身
+    const { error } = await supabase
+        .from('sentences')
+        .update({ spanish_text: newSpanishText, chinese_translation: newChineseText, ai_notes: null })
+        .eq('id', id)
+        .eq('user_id', currentUser.id);
+
+    if (error) {
+        await showCustomConfirm(`更新失败: ${error.message}`);
+    } else {
         dom.editSentenceModal.style.display = 'none';
-        await showCustomConfirm('更新成功！', false);
+        
+        // 2. 【修改】调用新的全局函数精确更新单词库
+        await syncWordBankForSentenceChange({
+            oldSentenceText: oldSentenceText,
+            newSentenceText: newSpanishText
+        });
+        
+        // 3. 【修改】刷新所有数据，然后同步筛选列表，最后渲染UI
+        await showCustomConfirm('更新成功！\n\n(点击任意地方关闭)', false);
         setTimeout(() => document.getElementById('confirmModal').style.display = 'none', 1000);
         await fetchInitialData();
+        filterAndSortSentences(); // 确保显示列表与主列表同步
         renderUI();
     }
 }

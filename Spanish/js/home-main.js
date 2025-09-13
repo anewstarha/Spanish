@@ -68,6 +68,7 @@ async function startSession(event) {
         .select('id, spanish_text')
         .eq('user_id', currentUser.id)
         .or('mastered.is.null,mastered.eq.false')
+        .order('id', { ascending: true }) 
         .limit(count);
     if (error) {
         console.error('Error fetching sentences for session:', error);

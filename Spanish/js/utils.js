@@ -162,3 +162,135 @@ export function initializeDropdowns() {
         isGlobalClickListenerAdded = true;
     }
 }
+
+// 【新增】处理单句增、删、改并精确同步单词库的全局函数
+export async function syncWordBankForSentenceChange({ oldSentenceText = '', newSentenceText = '' }) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // 1. 使用 getWordsFromSentence (已包含停用词逻辑) 来分析新旧单词
+    const oldWords = new Set(getWordsFromSentence(oldSentenceText));
+    const newWords = new Set(getWordsFromSentence(newSentenceText));
+
+    // 2. 计算差异
+    const removedWords = [...oldWords].filter(word => !newWords.has(word));
+    const addedWords = [...newWords].filter(word => !oldWords.has(word));
+
+    // 3. 处理被删除的单词
+    if (removedWords.length > 0) {
+        // 从数据库获取这些单词的当前词频
+        const { data: wordsData, error: fetchError } = await supabase
+            .from('high_frequency_words')
+            .select('spanish_word, frequency')
+            .in('spanish_word', removedWords)
+            .eq('user_id', user.id);
+
+        if (fetchError) {
+            console.error('获取待删除单词的词频失败:', fetchError);
+        } else {
+            const wordsToDelete = [];
+            const wordsToDecrement = [];
+
+            wordsData.forEach(word => {
+                if (word.frequency <= 1) {
+                    wordsToDelete.push(word.spanish_word);
+                } else {
+                    wordsToDecrement.push({ 
+                        user_id: user.id, 
+                        spanish_word: word.spanish_word, 
+                        frequency: word.frequency - 1 
+                    });
+                }
+            });
+
+            // 批量删除词频为1的单词
+            if (wordsToDelete.length > 0) {
+                const { error: deleteError } = await supabase
+                    .from('high_frequency_words')
+                    .delete()
+                    .in('spanish_word', wordsToDelete)
+                    .eq('user_id', user.id);
+                if (deleteError) console.error('删除单词失败:', deleteError);
+            }
+
+            // 批量更新（减少）词频
+            if (wordsToDecrement.length > 0) {
+                const { error: upsertError } = await supabase
+                    .from('high_frequency_words')
+                    .upsert(wordsToDecrement, { onConflict: 'user_id, spanish_word' });
+                if (upsertError) console.error('减少单词词频失败:', upsertError);
+            }
+        }
+    }
+
+    // 4. 处理被新增的单词
+    if (addedWords.length > 0) {
+        const { data: existingWords, error: fetchExistingError } = await supabase
+            .from('high_frequency_words')
+            .select('spanish_word, frequency')
+            .in('spanish_word', addedWords)
+            .eq('user_id', user.id);
+        
+        if (fetchExistingError) {
+            console.error('获取待新增单词失败:', fetchExistingError);
+            return;
+        }
+
+        const existingWordMap = new Map(existingWords.map(w => [w.spanish_word, w.frequency]));
+        const wordsToUpsert = [];
+        const brandNewWordsToTranslate = [];
+
+        addedWords.forEach(word => {
+            if (existingWordMap.has(word)) {
+                // 单词已存在，词频+1
+                wordsToUpsert.push({
+                    user_id: user.id,
+                    spanish_word: word,
+                    frequency: existingWordMap.get(word) + 1
+                });
+            } else {
+                // 是一个全新的单词
+                brandNewWordsToTranslate.push(word);
+            }
+        });
+
+        // 为全新的单词获取翻译
+        if (brandNewWordsToTranslate.length > 0) {
+            try {
+                const TRANSLATE_URL = `https://rvarfascuwvponxwdeoe.supabase.co/functions/v1/explain-sentence`;
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) throw new Error("用户未认证");
+
+                const response = await fetch(TRANSLATE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                    body: JSON.stringify({ words: brandNewWordsToTranslate, getTranslation: true })
+                });
+
+                if (!response.ok) throw new Error(`单词翻译API错误: ${await response.text()}`);
+                
+                const { translations } = await response.json();
+                for (const word in translations) {
+                    if (Object.prototype.hasOwnProperty.call(translations, word)) {
+                        wordsToUpsert.push({
+                            user_id: user.id,
+                            spanish_word: word,
+                            frequency: 1, // 新单词词频为1
+                            chinese_translation: translations[word]
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("调用AI翻译新单词失败:", error);
+            }
+        }
+
+        // 批量更新（增加）和插入新单词
+        if (wordsToUpsert.length > 0) {
+            const { error: upsertError } = await supabase
+                .from('high_frequency_words')
+                .upsert(wordsToUpsert, { onConflict: 'user_id, spanish_word' });
+            if (upsertError) console.error('增加单词词频或插入新单词失败:', upsertError);
+        }
+    }
+}
