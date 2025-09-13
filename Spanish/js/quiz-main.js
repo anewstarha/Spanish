@@ -43,7 +43,7 @@ const dom = {
     newQuizBtn: document.getElementById('new-quiz-btn'),
 };
 
-// --- 3. Core Logic (未修改的函数保持不变) ---
+// --- 3. Core Logic ---
 function showFeedback(question) { if (!question || !answeredStates.has(question.id)) { dom.feedbackContainer.innerHTML = ''; return; } const { isCorrect } = answeredStates.get(question.id); const questionType = question.spanish_text ? 'sentences' : 'words'; if (isCorrect) { dom.feedbackContainer.innerHTML = `<div class="feedback correct">回答正确！</div>`; } else { if (questionType === 'sentences') { dom.feedbackContainer.innerHTML = `<div class="feedback incorrect">回答错误！</div>`; } else { const correctAnswer = question.spanish_word; dom.feedbackContainer.innerHTML = `<div class="feedback incorrect">回答错误！正确答案是：<br><strong>${correctAnswer}</strong></div>`; } } }
 async function fetchAllData() { const { data: sentences, error: sError } = await supabase.from('sentences').select('*').eq('user_id', currentUser.id); if (sError) console.error('Error fetching sentences', sError); allSentences = sentences || []; const { data: words, error: wError } = await supabase.from('high_frequency_words').select('*').eq('user_id', currentUser.id); if (wError) console.error('Error fetching words', wError); allWords = words || []; }
 function updateStatCounts() { const contentType = dom.contentTypeSelector.querySelector('.active').dataset.type; const sourceData = contentType === 'sentences' ? allSentences : allWords; const studyScope = dom.studyScopeSelector.querySelector('.active').dataset.scope; let initialPool = []; if (studyScope === 'all') { initialPool = [...sourceData]; } else if (studyScope === 'studied') { initialPool = sourceData.filter(item => allStudiedIds.has(item.id)); } else { initialPool = sourceData.filter(item => !allStudiedIds.has(item.id)); } const stats = { untested: initialPool.filter(item => !allTestedIds.has(String(item.id))).length, incorrect: initialPool.filter(item => allTestedIds.get(String(item.id)) === false).length, correct: initialPool.filter(item => allTestedIds.get(String(item.id)) === true).length, }; dom.testScopeSelection.querySelector('input[value="untested"]').nextElementSibling.textContent = ` 未测试 (${stats.untested} 条)`; dom.testScopeSelection.querySelector('input[value="incorrect"]').nextElementSibling.textContent = ` 曾在测试中答错 (${stats.incorrect} 条)`; dom.testScopeSelection.querySelector('input[value="correct"]').nextElementSibling.textContent = ` 曾在测试中答对 (${stats.correct} 条)`; }
@@ -94,64 +94,157 @@ async function prepareQuestionPool() {
     for (let i = preparedQuizQuestions.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[preparedQuizQuestions[i], preparedQuizQuestions[j]] = [preparedQuizQuestions[j], preparedQuizQuestions[i]]; }
     if (preparedQuizQuestions.length > 0) { dom.startQuizBtn.disabled = false; dom.startQuizBtn.textContent = '开始测试'; } else { dom.startQuizBtn.textContent = '没有符合条件的题目'; }
 }
-function startQuiz() { quizQuestions = preparedQuizQuestions; if (quizQuestions.length === 0) { showCustomConfirm('没有符合条件的题目可供测试！'); return; } currentQuestionIndex = 0; answeredStates.clear(); userHasScrolledManually = false; dom.setupView.style.display = 'none'; dom.resultsView.style.display = 'none'; dom.quizView.style.display = 'block'; renderProgressBar(); displayQuestion(true); }
-function displayQuestion(shouldAutoplay = false) { if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer); const question = quizQuestions[currentQuestionIndex]; if (!question) { showResults(); return; } const isAnswered = answeredStates.has(question.id); if (isAnswered) { showFeedback(question); } else { dom.feedbackContainer.innerHTML = ''; } const questionType = question.spanish_text ? 'sentences' : 'words'; if (questionType === 'sentences') { dom.questionInstruction.textContent = '请根据听到的句子，选择正确的中文翻译。'; displaySentenceQuestion(question, isAnswered); } else { dom.questionInstruction.textContent = '请根据看到的中文，拼写出对应的单词。'; displayWordQuestion(question, isAnswered); } const audioText = questionType === 'sentences' ? question.spanish_text : question.spanish_word; if (shouldAutoplay && !isAnswered) { readText(audioText); } dom.quizReadBtn.onclick = () => readText(audioText, false, dom.quizReadBtn); dom.quizSlowReadBtn.onclick = () => readText(audioText, true, dom.quizSlowReadBtn); updateProgressBar(); }
+function startQuiz() {
+    quizQuestions = preparedQuizQuestions;
+    if (quizQuestions.length === 0) {
+        showCustomConfirm('没有符合条件的题目可供测试！');
+        return;
+    }
+    currentQuestionIndex = 0;
+    answeredStates.clear();
+    userHasScrolledManually = false;
+    dom.setupView.style.display = 'none';
+    dom.resultsView.style.display = 'none';
+    dom.quizView.style.display = 'block';
+    renderProgressBar();
+    displayQuestion();
+}
+function displayQuestion() {
+    if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+    const question = quizQuestions[currentQuestionIndex];
+    if (!question) {
+        showResults();
+        return;
+    }
+    const isAnswered = answeredStates.has(question.id);
+    if (isAnswered) {
+        showFeedback(question);
+    } else {
+        dom.feedbackContainer.innerHTML = '';
+    }
+    const questionType = question.spanish_text ? 'sentences' : 'words';
+
+    if (questionType === 'sentences') {
+        dom.questionInstruction.textContent = '请点击“朗读”按钮听句子，然后选择正确的翻译。';
+        displaySentenceQuestion(question, isAnswered);
+    } else {
+        dom.questionInstruction.textContent = '请根据看到的中文，拼写出对应的单词。';
+        displayWordQuestion(question, isAnswered);
+    }
+
+    const audioText = questionType === 'sentences' ? question.spanish_text : question.spanish_word;
+    
+    dom.quizReadBtn.onclick = () => readText(audioText, false, dom.quizReadBtn);
+    dom.quizSlowReadBtn.onclick = () => readText(audioText, true, dom.quizSlowReadBtn);
+    updateProgressBar();
+    updateNavButtons();
+}
 function displaySentenceQuestion(question, isAnswered) { const distractors = allSentences.filter(s => s.id !== question.id).sort(() => 0.5 - Math.random()).slice(0, 3).map(s => s.chinese_translation); const options = [question.chinese_translation, ...distractors].sort(() => 0.5 - Math.random()); let optionsHtml = '<div class="mcq-options">'; options.forEach((option, index) => { const letter = String.fromCharCode(65 + index); optionsHtml += `<button class="btn mcq-btn" data-option="${option}"><span class="mcq-letter">${letter}</span><span class="mcq-text">${option}</span></button>`; }); optionsHtml += '</div>'; dom.questionContent.innerHTML = optionsHtml; if (isAnswered) { const { isCorrect, userAnswer } = answeredStates.get(question.id); document.querySelectorAll('.mcq-btn').forEach(btn => { btn.disabled = true; if (btn.dataset.option === question.chinese_translation) btn.classList.add('correct'); if (btn.dataset.option === userAnswer && !isCorrect) btn.classList.add('incorrect'); }); } else { dom.questionContent.querySelectorAll('.mcq-btn').forEach(btn => { btn.addEventListener('click', (e) => { const clickedButton = e.target.closest('.mcq-btn'); checkSentenceAnswer(clickedButton.dataset.option === question.chinese_translation, question, clickedButton); }); }); } }
 function displayWordQuestion(question, isAnswered) { const contentHtml = `<div class="dictation-group"><div class="dictation-word-translation">${question.chinese_translation}</div><input type="text" id="dictation-input" class="form-input" placeholder="请在此输入单词..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"><div id="special-chars" class="special-chars"><button>á</button><button>é</button><button>í</button><button>ó</button><button>ú</button><button>ñ</button><button>ü</button></div><button id="check-dictation-btn" class="btn btn-primary">检查答案</button></div>`; dom.questionContent.innerHTML = contentHtml; const input = document.getElementById('dictation-input'); const checkBtn = document.getElementById('check-dictation-btn'); if (isAnswered) { const { userAnswer } = answeredStates.get(question.id); input.value = userAnswer; input.disabled = true; checkBtn.disabled = true; } else { document.getElementById('special-chars').querySelectorAll('button').forEach(btn => { btn.addEventListener('click', () => { input.value += btn.textContent; input.focus(); }); }); checkBtn.addEventListener('click', () => checkWordAnswer(input.value.trim(), question)); input.addEventListener('keydown', (e) => { if (e.key === 'Enter') checkBtn.click(); }); input.focus(); } }
-function checkSentenceAnswer(isCorrect, question, clickedButton) { userHasScrolledManually = false; document.querySelectorAll('.mcq-btn').forEach(btn => { btn.disabled = true; if (btn.dataset.option === question.chinese_translation) btn.classList.add('correct'); }); answeredStates.set(question.id, { isCorrect, question, userAnswer: clickedButton.dataset.option }); showFeedback(question); logAttempt(question.id, isCorrect, 'sentence'); updateProgressBar(); autoAdvanceTimer = setTimeout(nextQuestion, 2000); }
-function checkWordAnswer(userAnswer, question) { userHasScrolledManually = false; const correctAnswer = question.spanish_word; let isCorrect = userAnswer.toLowerCase() === correctAnswer.toLowerCase(); answeredStates.set(question.id, { isCorrect, question, userAnswer }); showFeedback(question); logAttempt(question.id, isCorrect, 'word'); updateProgressBar(); document.getElementById('check-dictation-btn').disabled = true; document.getElementById('dictation-input').disabled = true; autoAdvanceTimer = setTimeout(nextQuestion, 3000); }
+function checkSentenceAnswer(isCorrect, question, clickedButton) {
+    userHasScrolledManually = false;
+    document.querySelectorAll('.mcq-btn').forEach(btn => {
+        btn.disabled = true;
+        if (btn.dataset.option === question.chinese_translation) btn.classList.add('correct');
+    });
+    answeredStates.set(question.id, { isCorrect, question, userAnswer: clickedButton.dataset.option });
+    showFeedback(question);
+    logAttempt(question.id, isCorrect, 'sentence');
+    updateProgressBar();
+    updateNavButtons();
+}
+function checkWordAnswer(userAnswer, question) {
+    userHasScrolledManually = false;
+    const correctAnswer = question.spanish_word;
+    let isCorrect = userAnswer.toLowerCase() === correctAnswer.toLowerCase();
+    answeredStates.set(question.id, { isCorrect, question, userAnswer });
+    showFeedback(question);
+    logAttempt(question.id, isCorrect, 'word');
+    updateProgressBar();
+    document.getElementById('check-dictation-btn').disabled = true;
+    document.getElementById('dictation-input').disabled = true;
+    updateNavButtons();
+}
 async function logAttempt(itemId, isCorrect, itemType) { await supabase.from('quiz_attempts').insert({ user_id: currentUser.id, item_id: itemId, item_type: itemType, is_correct: isCorrect }); }
-function nextQuestion() { if (currentQuestionIndex < quizQuestions.length - 1) { currentQuestionIndex++; displayQuestion(true); } else { showResults(); } }
+
+function nextQuestion() {
+    if (currentQuestionIndex < quizQuestions.length - 1) {
+        currentQuestionIndex++;
+        displayQuestion();
+    } else {
+        showResults(); 
+    }
+}
+
+function prevQuestion() {
+    if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        displayQuestion();
+    }
+}
+
+function updateNavButtons() {
+    dom.progressPrevBtn.disabled = currentQuestionIndex === 0;
+
+    // 【修改】核心改动在此。
+    // 移除了必须先回答问题的检查，只判断是否为最后一题。
+    const isLastQuestion = currentQuestionIndex >= quizQuestions.length - 1;
+    dom.progressNextBtn.disabled = isLastQuestion;
+}
+
+
 function showResults() { dom.quizView.style.display = 'none'; dom.resultsView.style.display = 'block'; const answeredCount = answeredStates.size; wrongAnswers = Array.from(answeredStates.values()).filter(state => !state.isCorrect).map(state => state.question); const correctCount = answeredCount - wrongAnswers.length; dom.scoreText.textContent = `您答对了 ${correctCount} / ${answeredCount} 题！`; if (wrongAnswers.length > 0) { let wrongHtml = '<h3>错题回顾：</h3><ul>'; wrongAnswers.forEach(item => { const spanish = item.spanish_text || item.spanish_word; const chinese = item.chinese_translation || 'N/A'; wrongHtml += `<li><strong>${spanish}</strong><br>${chinese}</li>`; }); wrongHtml += '</ul>'; dom.wrongAnswersList.innerHTML = wrongHtml; dom.retestWrongBtn.style.display = 'inline-flex'; } else { dom.wrongAnswersList.innerHTML = answeredCount > 0 ? '<p>太棒了，全部正确！</p>' : '<p>您没有回答任何题目。</p>'; dom.retestWrongBtn.style.display = 'none'; } }
 function renderProgressBar() { let dotsHtml = ''; for (let i = 0; i < quizQuestions.length; i++) { dotsHtml += `<div class="progress-dot" data-index="${i}">${i + 1}</div>`; } dom.progressBarContainer.innerHTML = `<div class="progress-bar-track">${dotsHtml}</div>`; const track = dom.progressBarContainer.querySelector('.progress-bar-track'); track.querySelectorAll('.progress-dot').forEach(dot => { dot.addEventListener('click', () => { if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer); userHasScrolledManually = false; currentQuestionIndex = parseInt(dot.dataset.index, 10); displayQuestion(); }); }); }
 function updateProgressBar() { const track = dom.progressBarContainer.querySelector('.progress-bar-track'); if (!track) return; track.querySelectorAll('.progress-dot').forEach((dot, index) => { dot.classList.remove('current', 'correct', 'incorrect'); const questionId = quizQuestions[index]?.id; if (questionId) { const state = answeredStates.get(questionId); if (state) { dot.classList.add(state.isCorrect ? 'correct' : 'incorrect'); } } if (index === currentQuestionIndex) { dot.classList.add('current'); } }); if (!userHasScrolledManually) { const currentDot = track.children[currentQuestionIndex]; if (currentDot) { currentDot.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); } } }
 async function handleEndQuiz() { if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer); const confirmation = await showCustomConfirm('您确定要结束本次测试吗？'); if (confirmation) { showResults(); } }
-function setupEventListeners() { dom.contentTypeSelector.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON' && !e.target.classList.contains('active')) { dom.contentTypeSelector.querySelector('.active')?.classList.remove('active'); e.target.classList.add('active'); loadStats(); } }); dom.studyScopeSelector.addEventListener('click', (e) => { const button = e.target.closest('button'); if (button && !button.classList.contains('active')) { dom.studyScopeSelector.querySelector('.active')?.classList.remove('active'); button.classList.add('active'); const allCheckBoxes = dom.testScopeSelection.querySelectorAll('input[name="scope"]'); if (button.dataset.scope === 'unstudied') { allCheckBoxes.forEach(cb => { cb.checked = (cb.value === 'untested'); cb.disabled = true; }); } else { allCheckBoxes.forEach(cb => { cb.disabled = false; }); } updateStatCounts(); prepareQuestionPool(); } }); dom.testScopeSelection.addEventListener('change', (e) => { if (e.target.name === 'scope') { prepareQuestionPool(); } }); dom.setupForm.addEventListener('submit', (e) => { e.preventDefault(); startQuiz(); }); dom.endQuizBtn.addEventListener('click', handleEndQuiz); dom.retestWrongBtn.addEventListener('click', () => { preparedQuizQuestions = [...wrongAnswers]; startQuiz(); }); dom.newQuizBtn.addEventListener('click', () => { dom.resultsView.style.display = 'none'; dom.setupView.style.display = 'block'; loadStats(); }); const getScrollDistance = () => { const track = dom.progressBarContainer.querySelector('.progress-bar-track'); const firstDot = dom.progressBarContainer.querySelector('.progress-dot'); if (!track || !firstDot) return 50; const gap = parseFloat(window.getComputedStyle(track).gap) || 8; return firstDot.offsetWidth + gap; }; dom.progressPrevBtn.addEventListener('click', () => { userHasScrolledManually = true; dom.progressBarContainer.scrollBy({ left: -getScrollDistance(), behavior: 'smooth' }); }); dom.progressNextBtn.addEventListener('click', () => { userHasScrolledManually = true; dom.progressBarContainer.scrollBy({ left: getScrollDistance(), behavior: 'smooth' }); }); }
+function setupEventListeners() {
+    dom.contentTypeSelector.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON' && !e.target.classList.contains('active')) { dom.contentTypeSelector.querySelector('.active')?.classList.remove('active'); e.target.classList.add('active'); loadStats(); } });
+    dom.studyScopeSelector.addEventListener('click', (e) => { const button = e.target.closest('button'); if (button && !button.classList.contains('active')) { dom.studyScopeSelector.querySelector('.active')?.classList.remove('active'); button.classList.add('active'); const allCheckBoxes = dom.testScopeSelection.querySelectorAll('input[name="scope"]'); if (button.dataset.scope === 'unstudied') { allCheckBoxes.forEach(cb => { cb.checked = (cb.value === 'untested'); cb.disabled = true; }); } else { allCheckBoxes.forEach(cb => { cb.disabled = false; }); } updateStatCounts(); prepareQuestionPool(); } });
+    dom.testScopeSelection.addEventListener('change', (e) => { if (e.target.name === 'scope') { prepareQuestionPool(); } });
+    dom.setupForm.addEventListener('submit', (e) => { e.preventDefault(); startQuiz(); });
+    dom.endQuizBtn.addEventListener('click', handleEndQuiz);
+    dom.retestWrongBtn.addEventListener('click', () => { preparedQuizQuestions = [...wrongAnswers]; startQuiz(); });
+    dom.newQuizBtn.addEventListener('click', () => { dom.resultsView.style.display = 'none'; dom.setupView.style.display = 'block'; loadStats(); });
 
-// --- 4. Page Initialization (核心修改区域) ---
+    dom.progressPrevBtn.addEventListener('click', prevQuestion);
+    dom.progressNextBtn.addEventListener('click', nextQuestion);
+}
+
+// --- 4. Page Initialization ---
 
 async function initializePage() {
-    // 1. 检查用户是否登录
     currentUser = await protectPage();
     if (!currentUser) return;
 
-    // 2. 检查是否存在来自学习会话的 "quizSession" (入口路由器)
     const quizSessionData = sessionStorage.getItem('quizSession');
 
-    // 初始化页面通用元素 (例如头部、下拉菜单等)
     await initializeHeader(currentUser);
     initializeDropdowns();
-    setupEventListeners(); // 提前绑定所有事件监听器，确保 quiz view 中的按钮能正常工作
+    setupEventListeners(); 
 
     if (quizSessionData) {
-        // =============================================================
-        // 分支 A: 会话测试模式 (Session Quiz Mode)
-        // =============================================================
         console.log("检测到会话测试任务，进入会话测试模式。");
-        sessionStorage.removeItem('quizSession'); // 读取后立即清除，防止重用
+        sessionStorage.removeItem('quizSession');
         const session = JSON.parse(quizSessionData);
 
-        // a. 临时显示加载提示，隐藏主设置界面
         dom.setupView.innerHTML = `<div class="card quiz-card"><h2 class="quiz-title">正在为您准备测验...</h2><div class="loading-spinner"></div></div>`;
         
-        // b. 获取所有题目数据作为总题库
         await fetchAllData();
 
-        // c. 根据会话类型准备题目
         let questions = [];
         const sentenceIds = new Set(session.sentenceIds || []);
         const wordIds = new Set(session.wordIds || []);
 
         if (session.type === 'sentence') {
             questions = allSentences.filter(s => sentenceIds.has(s.id));
-            for (let i = questions.length - 1; i > 0; i--) { // 随机打乱
+            for (let i = questions.length - 1; i > 0; i--) { 
                 const j = Math.floor(Math.random() * (i + 1));
                 [questions[i], questions[j]] = [questions[j], questions[i]];
             }
 
         } else if (session.type === 'word') {
             questions = allWords.filter(w => wordIds.has(w.id));
-            for (let i = questions.length - 1; i > 0; i--) { // 随机打乱
+            for (let i = questions.length - 1; i > 0; i--) { 
                 const j = Math.floor(Math.random() * (i + 1));
                 [questions[i], questions[j]] = [questions[j], questions[i]];
             }
@@ -161,27 +254,23 @@ async function initializePage() {
             const sessionSentences = session.sentenceIds.map(id => allSentences.find(s => s.id === id)).filter(Boolean);
             
             for (const sentence of sessionSentences) {
-                orderedQuestions.push(sentence); // 1. 添加句子题
-                const wordsInSentence = getWordsFromSentence(sentence.spanish_text); // 2. 找出该句子的单词
-                for (const wordText of wordsInSentence) { // 3. 添加这些单词题
+                orderedQuestions.push(sentence);
+                const wordsInSentence = getWordsFromSentence(sentence.spanish_text);
+                for (const wordText of wordsInSentence) {
                     const wordObject = allWords.find(w => w.spanish_word === wordText);
                     if (wordObject && wordIds.has(wordObject.id)) {
                         orderedQuestions.push(wordObject);
                     }
                 }
             }
-            questions = orderedQuestions; // 使用有序队列
+            questions = orderedQuestions;
         }
         
         preparedQuizQuestions = questions;
         
-        // d. 直接开始测试
         startQuiz();
 
     } else {
-        // =============================================================
-        // 分支 B: 自由测试模式 (Free Test Mode) - 保持原有逻辑
-        // =============================================================
         console.log("未检测到会话测试任务，进入自由测试模式。");
         await fetchAllData();
         await loadStats();
