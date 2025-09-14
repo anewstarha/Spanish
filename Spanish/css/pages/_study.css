@@ -47,59 +47,6 @@
     background-color: #f0f0f0;
 }
 
-
-.control-group-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.control-group {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-}
-
-.control-label {
-    font-weight: 500;
-    color: var(--muted-color);
-    font-size: 0.9rem;
-    white-space: nowrap;
-    flex-shrink: 0;
-    margin-right: 1rem;
-}
-
-.segmented-control {
-    display: flex;
-    background-color: #e9ecef;
-    border-radius: var(--border-radius);
-    padding: 4px;
-}
-
-.segmented-control button {
-    background-color: transparent;
-    border: none;
-    padding: 0.4rem 0.5rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: normal;
-    color: var(--muted-color);
-    transition: background-color 0.2s, color 0.2s;
-    flex: 1;
-    white-space: nowrap;
-}
-
-.segmented-control button:hover:not(.active) {
-    background-color: #dee2e6;
-}
-
-.segmented-control button.active {
-    background-color: var(--primary-color);
-    color: white;
-}
-
 .mode-switcher {
     display: inline-flex;
     background-color: #e9ecef;
@@ -181,39 +128,6 @@
     min-height: 2em;
 }
 
-.source-sentence {
-    font-size: 0.9rem;
-    color: var(--muted-color);
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border-color);
-    font-style: italic;
-}
-
-.source-sentence::before {
-    content: '例句：';
-    font-weight: bold;
-    font-style: normal;
-}
-
-#word-frequency-badge {
-    font-size: 0.8rem;
-    font-weight: bold;
-    color: var(--card-background);
-    background-color: var(--secondary-color);
-    padding: 2px 6px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    line-height: 1;
-    margin-left: 0.5rem;
-    vertical-align: super;
-}
-
-#word-frequency-badge:hover {
-    background-color: var(--primary-color);
-}
-
 .highlight-word {
     color: #0056b3;
     font-weight: bold;
@@ -248,6 +162,7 @@
     justify-content: center;
     gap: 1.5rem;
     flex-grow: 1;
+    /* 增加一个小的左内边距，以平衡右侧AI按钮的视觉重量 */
     padding-left: 50px; 
 }
 
@@ -265,7 +180,7 @@
 }
 
 .card-actions .action-item-right {
-    min-width: 50px;
+    min-width: 50px; /* 确保它占据一定空间，帮助 playback-group 居中 */
     flex-shrink: 0;
 }
 
@@ -294,16 +209,6 @@
     min-height: 2.5rem;
 }
 
-.study-card > .mastered-toggle,
-#mastered-toggle {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    color: var(--muted-color);
-    font-size: 0.9rem;
-}
-
 .study-card > .mastered-toggle {
     position: absolute;
     top: 1rem;
@@ -313,6 +218,15 @@
     padding: 0.2rem 0.6rem;
     border-radius: 12px;
     backdrop-filter: blur(2px);
+}
+
+.mastered-toggle, #mastered-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    color: var(--muted-color);
+    font-size: 0.9rem;
 }
 
 .mastered-toggle:hover {
@@ -357,45 +271,11 @@
     text-decoration: underline;
 }
 
-.card-footer .card-tags {
-    flex-grow: 1;
-    flex-shrink: 1;
-    min-width: 0;
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin: 0 1rem;
-}
-
-.card-footer .card-tag {
-    background-color: #f1f3f5;
-    color: var(--muted-color);
-    padding: 0.1rem 0.6rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    margin-right: 0.4rem;
-    display: inline-block;
-}
-
 #delete-sentence-link:hover {
     color: var(--danger-color);
 }
 
-.autoplay-container {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 20;
-    display: none;
-}
-
-#autoplay-toggle-btn.active {
-    color: var(--primary-color);
-    background-color: var(--light-blue-bg);
-}
-
+/* 单词列表视图 (Word List View) 相关样式 */
 #word-card-container {
     background-color: var(--card-background);
     border-radius: var(--border-radius);
@@ -472,12 +352,28 @@
     stroke: white;
 }
 
-.word-list-item .word-text {
+.word-list-item .word-details {
     flex-grow: 1;
+    display: flex;
+    align-items: baseline; 
+    gap: 0.75rem;
+    cursor: pointer;
+    min-width: 0;
+}
+
+.word-list-item .word-text {
     font-size: 1.1rem;
     font-weight: 500;
     color: var(--text-color-dark);
-    cursor: pointer;
+    flex-shrink: 0; 
+}
+
+.word-list-item .word-translation {
+    font-size: 0.9rem;
+    color: var(--muted-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .word-list-item .actions {
@@ -506,48 +402,7 @@
     color: var(--primary-color);
 }
 
-.session-progress {
-    background-color: var(--primary-color);
-    color: white;
-    padding: 0.5rem 0;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    position: sticky;
-    top: var(--header-height);
-    z-index: 999;
-}
-
-.session-progress .container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.session-progress-text {
-    font-weight: 500;
-}
-
-.session-exit-link {
-    color: white;
-    font-size: 0.85rem;
-    text-decoration: underline;
-    cursor: pointer;
-    opacity: 0.8;
-    transition: opacity 0.2s;
-}
-
-.session-exit-link:hover {
-    opacity: 1;
-}
-
-@media (max-width: 768px) {
-    .spanish {
-        font-size: 1.8rem;
-    }
-    .chinese {
-        font-size: 1rem;
-    }
-}
-
+/* 底部导航栏 */
 #study-footer-nav {
     width: 100%;
     max-width: 600px;
@@ -608,6 +463,9 @@
     color: var(--primary-color);
 }
 
+/* ========================================= */
+/* 【新增】最终版设置面板样式 */
+/* ========================================= */
 .actions-panel {
     display: none;
     position: absolute;
@@ -627,7 +485,6 @@
     display: block;
     animation: fadeInDown 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
 }
-
 .actions-panel::before {
     content: '';
     position: absolute;
@@ -637,22 +494,21 @@
     border: 8px solid transparent;
     border-bottom-color: var(--card-background);
 }
-
 .actions-panel hr.divider {
     border: none;
     border-top: 1px solid #f0f0f0;
     margin: 0.75rem 0;
 }
-
 .actions-panel .control-group {
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
-
-/* ========================================= */
-/* 【新增】最终版设置面板样式 */
-/* ========================================= */
+.actions-panel .control-group-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
 .toggle-group {
     width: 100%;
     display: flex;

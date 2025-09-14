@@ -88,10 +88,20 @@ function calculateDynamicFrequencies() {
 
 function updateDrawerContext() {
     const isSentenceMode = currentStudyMode === 'sentences';
-    const autoplaySection = document.getElementById('autoplay-section');
-    if (autoplaySection) {
-        autoplaySection.style.display = isSentenceMode ? 'block' : 'none';
+
+    // 【修改】获取“自动朗读”的整个设置组
+    const autoplayGroup = document.querySelector('.toggle-group'); 
+    if(autoplayGroup) {
+        // 在句子模式下显示，在单词模式下隐藏
+        autoplayGroup.style.display = isSentenceMode ? 'flex' : 'none';
     }
+
+    // 【修改】获取分割线，同样在单词模式下隐藏
+    const divider = dom.filterPanel.querySelector('hr.divider');
+    if(divider) {
+        divider.style.display = isSentenceMode ? 'block' : 'none';
+    }
+
     const sentenceFilters = document.getElementById('sentence-filters');
     const wordFilters = document.getElementById('word-filters');
     if (sentenceFilters) sentenceFilters.style.display = isSentenceMode ? 'flex' : 'none';
@@ -252,20 +262,21 @@ function updateStudyProgressBar() {
 }
 
 function handleCardNavigation(direction) {
-    // 【修改】调整这里的逻辑
+    if (currentFilteredSentences.length === 0) return;
+
+    // 【修改】核心修复：无论如何，首先将当前卡片标记为“已见过”
+    const currentSentenceId = currentFilteredSentences[sentenceIndex].id;
+    seenInThisSession.add(currentSentenceId);
+    logStudyEvent(currentSentenceId, 'sentence');
+
+    // 【修改】然后，再检查是否完成
     const isCompletionTriggered = (studySession || sentenceStatusFilter !== 'all') && seenInThisSession.size >= currentFilteredSentences.length;
 
-    // 如果是最后一题（或只有一题）且用户想去“下一题”，则显示结束弹窗
-    if ((currentFilteredSentences.length <= 1 || isCompletionTriggered) && direction === 'next') {
-        // 记录当前这最后一题的学习状态
-        const currentSentenceId = currentFilteredSentences[sentenceIndex].id;
-        seenInThisSession.add(currentSentenceId);
-        logStudyEvent(currentSentenceId, 'sentence');
-        
+    if (isCompletionTriggered && direction === 'next') {
         showSessionEndModal();
         return;
     }
-    
+
     // 如果列表不止一句话，才执行切换动画
     if (currentFilteredSentences.length > 1) {
         if (dom.sentenceCard.classList.contains('is-animating')) return;
@@ -274,11 +285,7 @@ function handleCardNavigation(direction) {
         const isNext = direction === 'next';
         const outClass = isNext ? 'animate-slide-out-left' : 'animate-slide-out-right';
         const inClass = isNext ? 'animate-slide-in-right' : 'animate-slide-in-left';
-
-        const currentSentenceId = currentFilteredSentences[sentenceIndex].id;
-        seenInThisSession.add(currentSentenceId);
-        logStudyEvent(currentSentenceId, 'sentence');
-
+        
         dom.sentenceCard.classList.add(outClass);
 
         dom.sentenceCard.addEventListener('animationend', () => {
@@ -294,9 +301,9 @@ function handleCardNavigation(direction) {
                 updateStudyProgressBar();
                 triggerAutoplay(); 
                 
-                const nextSentenceId = currentFilteredSentences[sentenceIndex].id;
-                seenInThisSession.add(nextSentenceId);
+                // 更新用户配置中的最后学习位置
                 if (!studySession) {
+                    const nextSentenceId = currentFilteredSentences[sentenceIndex].id;
                     supabase.from('profiles').update({ last_sentence_id: nextSentenceId }).eq('id', currentUser.id).then();
                 }
             }
@@ -396,11 +403,15 @@ function renderWordList(loadMore = false) {
         const item = document.createElement('div');
         item.className = 'word-list-item';
         item.dataset.wordId = word.id;
+        // 【修改】在 .word-text 后面增加了 .word-translation
         item.innerHTML = `
             <div class="mastered-toggle-word ${word.mastered ? 'mastered' : ''}" title="标记已掌握">
                 <svg class="mastered-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-8.79"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
             </div>
-            <span class="word-text">${word.spanish_word}</span>
+            <div class="word-details">
+                <span class="word-text">${word.spanish_word}</span>
+                <span class="word-translation">${word.chinese_translation || ''}</span>
+            </div>
             <div class="actions">
                 <button class="icon-btn-list read-btn" title="朗读">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
@@ -869,16 +880,13 @@ function setupEventListeners() {
     if (dom.sentenceListCloseBtn) dom.sentenceListCloseBtn.addEventListener('click', () => dom.sentenceListModal.style.display = 'none');
 }
 
-// 【新增】初始化设置面板的函数，包含所有新版UI的逻辑
 function initializeSettingsPanel() {
     const triggerBtn = dom.filterMenuBtn;
     const panel = dom.filterPanel;
     if (!triggerBtn || !panel) return;
 
-    let isFirstOpen = true;
-
-    // A. Pill Switch 控件的核心逻辑
-    function initializePillSwitch(containerId) {
+    // A. Pill Switch 控件的核心逻辑 (此函数不变)
+    function initializePillSwitch(containerId, stateUpdater) {
         const container = panel.querySelector(containerId);
         if (!container) return;
         const slider = container.querySelector('.pill-slider');
@@ -894,12 +902,12 @@ function initializeSettingsPanel() {
 
         buttons.forEach(button => {
             button.addEventListener('click', (e) => {
-                e.stopPropagation(); // 阻止事件冒泡到父元素导致面板关闭
+                e.stopPropagation();
                 moveSlider(button);
+                stateUpdater(button.dataset.value);
             });
         });
         
-        // 返回一个函数，用于在需要时手动定位滑块
         return {
             initSlider: () => {
                 const activeButton = container.querySelector('button.active');
@@ -908,23 +916,47 @@ function initializeSettingsPanel() {
         };
     }
 
-    const statusSwitch = initializePillSwitch('#status-filter-group');
-    const sortSwitch = initializePillSwitch('#sort-order-group');
+    const statusSwitch = initializePillSwitch('#status-filter-group', (value) => {
+        sentenceStatusFilter = value;
+        filterAndSortSentences();
+        renderUI();
+    });
+    const sortSwitch = initializePillSwitch('#sort-order-group', (value) => {
+        sentenceSortOrder = value;
+        filterAndSortSentences();
+        renderUI();
+    });
+    const wordStatusSwitch = initializePillSwitch('#word-status-filter-group', (value) => {
+        wordStatusFilter = value;
+        renderUI();
+    });
+    const wordSortSwitch = initializePillSwitch('#word-sort-order-group', (value) => {
+        wordSortOrder = value;
+        renderUI();
+    });
 
     // B. 下拉框显示/隐藏逻辑
     triggerBtn.addEventListener('click', (event) => {
         event.stopPropagation();
         const isVisible = panel.classList.toggle('is-visible');
 
-        // 只在第一次打开时，执行滑块的初始定位
-        if (isVisible && isFirstOpen) {
-            if (statusSwitch) statusSwitch.initSlider();
-            if (sortSwitch) sortSwitch.initSlider();
-            isFirstOpen = false;
+        // 【修改】每次打开面板时，都重新定位当前可见的滑块
+        if (isVisible) {
+            const onAnimationEnd = () => {
+                // 根据当前的学习模式，只初始化对应的滑块
+                if (currentStudyMode === 'sentences') {
+                    if (statusSwitch) statusSwitch.initSlider();
+                    if (sortSwitch) sortSwitch.initSlider();
+                } else {
+                    if (wordStatusSwitch) wordStatusSwitch.initSlider();
+                    if (wordSortSwitch) wordSortSwitch.initSlider();
+                }
+                panel.removeEventListener('animationend', onAnimationEnd);
+            };
+            panel.addEventListener('animationend', onAnimationEnd, { once: true });
         }
     });
 }
-
 // 【新增】初始化学习卡片的滑动切换功能
 function initializeSwipeGestures() {
     const card = dom.sentenceCard;

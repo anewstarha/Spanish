@@ -60,7 +60,6 @@ function showFeedback(question) {
         dom.feedbackContainer.innerHTML = `<div class="feedback correct">回答正确！</div>`;
     } else {
         if (questionType === 'sentences') {
-            // 【修改】当句子答错时，显示西班牙语原文
             dom.feedbackContainer.innerHTML = `
                 <div class="feedback incorrect">
                     回答错误！
@@ -132,28 +131,22 @@ function startQuiz() {
     answeredStates.clear();
     userHasScrolledManually = false;
     
-    // 先显示测试的主视图框架
     dom.setupView.style.display = 'none';
     dom.resultsView.style.display = 'none';
     dom.quizView.style.display = 'block';
 
-    // 【修改】不再直接显示题目，而是调用新函数来弹出提示框
     promptForAutoplay();
 }
-// 【新增】弹出自动播放确认框的函数
 async function promptForAutoplay() {
-    // 准备弹窗内容和按钮文本
     const message = '音频将自动播放，请确保您当前的环境适合收听。';
     const confirmText = '好的，自动播放';
     const cancelText = '本次手动播放';
 
-    // 复用现有的 confirmModal 元素
     const confirmModal = document.getElementById('confirmModal');
     const confirmMessage = document.getElementById('confirmMessage');
     const confirmBtn = document.getElementById('confirmBtn');
     const cancelBtn = document.getElementById('cancelBtn');
 
-    // 设置自定义内容
     confirmMessage.innerText = message;
     confirmBtn.textContent = confirmText;
     cancelBtn.textContent = cancelText;
@@ -172,18 +165,14 @@ async function promptForAutoplay() {
 
     const userChoseAutoplay = await userChoicePromise;
 
-    // 清理和关闭弹窗
     confirmModal.style.display = 'none';
     confirmBtn.onclick = null;
     cancelBtn.onclick = null;
-    // 还原按钮文本以防影响其他地方的使用
     confirmBtn.textContent = '确定';
     cancelBtn.textContent = '取消';
 
-    // 根据用户的选择，设置本次测试的自动播放状态
     isAutoplayThisSession = userChoseAutoplay;
 
-    // 用户做出选择后，才开始渲染和显示第一道题
     renderProgressBar();
     displayQuestion();
 }
@@ -217,7 +206,6 @@ function displayQuestion() {
     updateProgressBar();
     updateNavButtons();
 
-    // 【修改】在函数的末尾，检查是否需要自动播放
     if (isAutoplayThisSession && !isAnswered) {
         readText(audioText, false, dom.quizReadBtn);
     }
@@ -227,21 +215,16 @@ function displayWordQuestion(question, isAnswered) { const contentHtml = `<div c
 function checkSentenceAnswer(isCorrect, question, clickedButton) {
     userHasScrolledManually = false;
     
-    // 【修改】核心修复逻辑在此
-    // 禁用所有按钮
     document.querySelectorAll('.mcq-btn').forEach(btn => {
         btn.disabled = true;
-        // 为正确答案添加 'correct' 类
         if (btn.dataset.option === question.chinese_translation) {
             btn.classList.add('correct');
         }
     });
 
-    // 如果回答错误，为被点击的按钮添加 'incorrect' 类
     if (!isCorrect) {
         clickedButton.classList.add('incorrect');
     }
-    // --- 修复结束 ---
 
     answeredStates.set(question.id, { isCorrect, question, userAnswer: clickedButton.dataset.option });
     showFeedback(question);
@@ -265,12 +248,26 @@ function checkWordAnswer(userAnswer, question) {
     document.getElementById('check-dictation-btn').disabled = true;
     document.getElementById('dictation-input').disabled = true;
     updateNavButtons();
+
+    if (currentQuestionIndex >= quizQuestions.length - 1) {
+        setTimeout(() => {
+            handleQuizCompletion();
+        }, 2500);
+    }
 }
 async function logAttempt(itemId, isCorrect, itemType) { await supabase.from('quiz_attempts').insert({ user_id: currentUser.id, item_id: itemId, item_type: itemType, is_correct: isCorrect }); }
 
+async function handleQuizCompletion() {
+    const confirmation = await showCustomConfirm('您已完成所有题目，要结束测试并查看结果吗？');
+    if (confirmation) {
+        showResults();
+    }
+}
+
+
 function nextQuestion() {
     if (currentQuestionIndex < quizQuestions.length - 1) {
-        animateQuestionChange('next'); // 调用动画辅助函数
+        animateQuestionChange('next');
     } else {
         handleQuizCompletion();
     }
@@ -278,11 +275,10 @@ function nextQuestion() {
 
 function prevQuestion() {
     if (currentQuestionIndex > 0) {
-        animateQuestionChange('prev'); // 调用动画辅助函数
+        animateQuestionChange('prev');
     }
 }
 
-// 【新增】处理测试卡片切换动画的辅助函数
 function animateQuestionChange(changeDirection) {
     const quizCard = dom.quizView;
     if (quizCard.classList.contains('is-animating')) return;
@@ -295,7 +291,6 @@ function animateQuestionChange(changeDirection) {
     quizCard.classList.add(outClass);
 
     quizCard.addEventListener('animationend', () => {
-        // 在卡片不可见时，更新题目内容
         if (isNext) {
             currentQuestionIndex++;
         } else {
@@ -316,15 +311,40 @@ function animateQuestionChange(changeDirection) {
 
 function updateNavButtons() {
     dom.progressPrevBtn.disabled = currentQuestionIndex === 0;
-
-    // 【修改】核心改动在此。
-    // 移除了必须先回答问题的检查，只判断是否为最后一题。
     const isLastQuestion = currentQuestionIndex >= quizQuestions.length - 1;
     dom.progressNextBtn.disabled = isLastQuestion;
 }
 
+function showResults() {
+    dom.quizView.style.display = 'none';
+    dom.resultsView.style.display = 'block';
+    
+    const answeredCount = answeredStates.size;
+    wrongAnswers = Array.from(answeredStates.values()).filter(state => !state.isCorrect).map(state => state.question);
+    const correctCount = answeredCount - wrongAnswers.length;
+    dom.scoreText.textContent = `您答对了 ${correctCount} / ${answeredCount} 题！`;
+    
+    if (wrongAnswers.length > 0) {
+        let wrongHtml = '<h3>错题回顾：</h3><ul>';
+        wrongAnswers.forEach(item => {
+            const spanish = item.spanish_text || item.spanish_word;
+            const chinese = item.chinese_translation || 'N/A';
+            wrongHtml += `<li><strong>${spanish}</strong><br>${chinese}</li>`;
+        });
+        wrongHtml += '</ul>';
+        dom.wrongAnswersList.innerHTML = wrongHtml;
+        dom.retestWrongBtn.style.display = 'inline-flex';
+    } else {
+        dom.wrongAnswersList.innerHTML = answeredCount > 0 ? '<p>太棒了，全部正确！</p>' : '<p>您没有回答任何题目。</p>';
+        dom.retestWrongBtn.style.display = 'none';
+    }
 
-function showResults() { dom.quizView.style.display = 'none'; dom.resultsView.style.display = 'block'; const answeredCount = answeredStates.size; wrongAnswers = Array.from(answeredStates.values()).filter(state => !state.isCorrect).map(state => state.question); const correctCount = answeredCount - wrongAnswers.length; dom.scoreText.textContent = `您答对了 ${correctCount} / ${answeredCount} 题！`; if (wrongAnswers.length > 0) { let wrongHtml = '<h3>错题回顾：</h3><ul>'; wrongAnswers.forEach(item => { const spanish = item.spanish_text || item.spanish_word; const chinese = item.chinese_translation || 'N/A'; wrongHtml += `<li><strong>${spanish}</strong><br>${chinese}</li>`; }); wrongHtml += '</ul>'; dom.wrongAnswersList.innerHTML = wrongHtml; dom.retestWrongBtn.style.display = 'inline-flex'; } else { dom.wrongAnswersList.innerHTML = answeredCount > 0 ? '<p>太棒了，全部正确！</p>' : '<p>您没有回答任何题目。</p>'; dom.retestWrongBtn.style.display = 'none'; } }
+    if (isSessionQuiz) {
+        dom.newQuizBtn.textContent = '返回主页';
+    } else {
+        dom.newQuizBtn.textContent = '开始新测试';
+    }
+}
 function renderProgressBar() { let dotsHtml = ''; for (let i = 0; i < quizQuestions.length; i++) { dotsHtml += `<div class="progress-dot" data-index="${i}">${i + 1}</div>`; } dom.progressBarContainer.innerHTML = `<div class="progress-bar-track">${dotsHtml}</div>`; const track = dom.progressBarContainer.querySelector('.progress-bar-track'); track.querySelectorAll('.progress-dot').forEach(dot => { dot.addEventListener('click', () => { if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer); userHasScrolledManually = false; currentQuestionIndex = parseInt(dot.dataset.index, 10); displayQuestion(); }); }); }
 function updateProgressBar() { const track = dom.progressBarContainer.querySelector('.progress-bar-track'); if (!track) return; track.querySelectorAll('.progress-dot').forEach((dot, index) => { dot.classList.remove('current', 'correct', 'incorrect'); const questionId = quizQuestions[index]?.id; if (questionId) { const state = answeredStates.get(questionId); if (state) { dot.classList.add(state.isCorrect ? 'correct' : 'incorrect'); } } if (index === currentQuestionIndex) { dot.classList.add('current'); } }); if (!userHasScrolledManually) { const currentDot = track.children[currentQuestionIndex]; if (currentDot) { currentDot.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); } } }
 async function handleEndQuiz() { if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer); const confirmation = await showCustomConfirm('您确定要结束本次测试吗？'); if (confirmation) { showResults(); } }
@@ -334,14 +354,27 @@ function setupEventListeners() {
     dom.testScopeSelection.addEventListener('change', (e) => { if (e.target.name === 'scope') { prepareQuestionPool(); } });
     dom.setupForm.addEventListener('submit', (e) => { e.preventDefault(); startQuiz(); });
     dom.endQuizBtn.addEventListener('click', handleEndQuiz);
-    dom.retestWrongBtn.addEventListener('click', () => { preparedQuizQuestions = [...wrongAnswers]; startQuiz(); });
-    dom.newQuizBtn.addEventListener('click', () => { dom.resultsView.style.display = 'none'; dom.setupView.style.display = 'block'; loadStats(); });
+    
+    dom.retestWrongBtn.addEventListener('click', () => { 
+        isSessionQuiz = false;
+        preparedQuizQuestions = [...wrongAnswers]; 
+        startQuiz(); 
+    });
+
+    dom.newQuizBtn.addEventListener('click', () => {
+        if (isSessionQuiz) {
+            window.location.href = 'index.html';
+        } else {
+            dom.resultsView.style.display = 'none';
+            dom.setupView.style.display = 'block';
+            loadStats();
+        }
+    });
 
     dom.progressPrevBtn.addEventListener('click', prevQuestion);
     dom.progressNextBtn.addEventListener('click', nextQuestion);
 }
 
-// 【新增】初始化测试页面的滑动切换功能
 function initializeSwipeGestures() {
     const quizView = dom.quizView;
     if (!quizView) return;
@@ -351,15 +384,14 @@ function initializeSwipeGestures() {
     let touchEndX = 0;
     let touchEndY = 0;
     let isSwipeStartedOnInteractiveElement = false;
-    const swipeThreshold = 50; // 最小滑动距离
+    const swipeThreshold = 50;
 
     quizView.addEventListener('touchstart', (event) => {
         const target = event.target;
         
-        // 【关键】检查触摸是否开始于一个按钮或输入框
         if (target.closest('button, input, a, .mcq-btn')) {
             isSwipeStartedOnInteractiveElement = true;
-            return; // 如果是，则不启动滑动逻辑
+            return;
         }
         isSwipeStartedOnInteractiveElement = false;
 
@@ -369,7 +401,7 @@ function initializeSwipeGestures() {
 
     quizView.addEventListener('touchend', (event) => {
         if (isSwipeStartedOnInteractiveElement) {
-            return; // 如果触摸开始于交互元素，则忽略本次操作
+            return;
         }
 
         touchEndX = event.changedTouches[0].clientX;
@@ -381,18 +413,12 @@ function initializeSwipeGestures() {
         const deltaX = touchEndX - touchStartX;
         const deltaY = touchEndY - touchStartY;
 
-        // 检查是否为有效的水平滑动
-        // 1. 水平距离超过阈值
-        // 2. 水平距离大于垂直距离（避免与页面滚动冲突）
         if (Math.abs(deltaX) > swipeThreshold && Math.abs(deltaX) > Math.abs(deltaY)) {
             if (deltaX < 0) {
-                // 向左滑动 (下一题)
-                // 只有在下一题按钮可用时才执行
                 if (!dom.progressNextBtn.disabled) {
                     nextQuestion();
                 }
             } else {
-                // 向右滑动 (上一题)
                 if (!dom.progressPrevBtn.disabled) {
                     prevQuestion();
                 }
@@ -407,9 +433,13 @@ async function initializePage() {
     if (!currentUser) return;
 
     const quizSessionData = sessionStorage.getItem('quizSession');
+    
+    // 【修改】先设置标志位
+    isSessionQuiz = !!quizSessionData;
 
     await initializeHeader(currentUser);
     initializeDropdowns();
+    // 【修改】后绑定事件
     setupEventListeners(); 
     initializeSwipeGestures(); 
 
@@ -418,7 +448,7 @@ async function initializePage() {
         sessionStorage.removeItem('quizSession');
         const session = JSON.parse(quizSessionData);
 
-        dom.setupView.innerHTML = `<div class="card quiz-card"><h2 class="quiz-title">正在为您准备测验...</h2><div class="loading-spinner"></div></div>`;
+        dom.setupView.style.display = 'none';
         
         await fetchAllData();
 
@@ -432,14 +462,12 @@ async function initializePage() {
                 const j = Math.floor(Math.random() * (i + 1));
                 [questions[i], questions[j]] = [questions[j], questions[i]];
             }
-
         } else if (session.type === 'word') {
             questions = allWords.filter(w => wordIds.has(w.id));
             for (let i = questions.length - 1; i > 0; i--) { 
                 const j = Math.floor(Math.random() * (i + 1));
                 [questions[i], questions[j]] = [questions[j], questions[i]];
             }
-
         } else if (session.type === 'mixed') {
             const orderedQuestions = [];
             const sessionSentences = session.sentenceIds.map(id => allSentences.find(s => s.id === id)).filter(Boolean);
@@ -463,9 +491,11 @@ async function initializePage() {
 
     } else {
         console.log("未检测到会话测试任务，进入自由测试模式。");
+        dom.setupView.style.display = 'block';
         await fetchAllData();
         await loadStats();
     }
+    
     document.body.classList.remove('uninitialized');
     dom.quizPageWrapper.style.visibility = 'visible';
     dom.quizPageWrapper.style.opacity = '1';
