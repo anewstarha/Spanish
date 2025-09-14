@@ -269,19 +269,49 @@ async function logAttempt(itemId, isCorrect, itemType) { await supabase.from('qu
 
 function nextQuestion() {
     if (currentQuestionIndex < quizQuestions.length - 1) {
-        currentQuestionIndex++;
-        displayQuestion();
+        animateQuestionChange('next'); // 调用动画辅助函数
     } else {
-        showResults(); 
+        handleQuizCompletion();
     }
 }
 
 function prevQuestion() {
     if (currentQuestionIndex > 0) {
-        currentQuestionIndex--;
-        displayQuestion();
+        animateQuestionChange('prev'); // 调用动画辅助函数
     }
 }
+
+// 【新增】处理测试卡片切换动画的辅助函数
+function animateQuestionChange(changeDirection) {
+    const quizCard = dom.quizView;
+    if (quizCard.classList.contains('is-animating')) return;
+    quizCard.classList.add('is-animating');
+
+    const isNext = changeDirection === 'next';
+    const outClass = isNext ? 'animate-slide-out-left' : 'animate-slide-out-right';
+    const inClass = isNext ? 'animate-slide-in-right' : 'animate-slide-in-left';
+
+    quizCard.classList.add(outClass);
+
+    quizCard.addEventListener('animationend', () => {
+        // 在卡片不可见时，更新题目内容
+        if (isNext) {
+            currentQuestionIndex++;
+        } else {
+            currentQuestionIndex--;
+        }
+        displayQuestion();
+
+        quizCard.classList.remove(outClass);
+        quizCard.classList.add(inClass);
+
+        quizCard.addEventListener('animationend', () => {
+            quizCard.classList.remove(inClass, 'is-animating');
+        }, { once: true });
+        
+    }, { once: true });
+}
+
 
 function updateNavButtons() {
     dom.progressPrevBtn.disabled = currentQuestionIndex === 0;

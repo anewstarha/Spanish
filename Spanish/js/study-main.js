@@ -18,7 +18,6 @@ let dynamicWordFrequencies = new Map();
 
 // --- 2. DOM Elements ---
 const dom = {};
-let studyProgressContainer = null;
 
 function populateDomObject() {
     Object.assign(dom, {
@@ -66,6 +65,10 @@ function populateDomObject() {
         sentenceSortOrderGroup: document.getElementById('sort-order-group'),
         wordStatusFilterGroup: document.getElementById('word-status-filter-group'),
         wordSortOrderGroup: document.getElementById('word-sort-order-group'),
+        studyFooterNav: document.getElementById('study-footer-nav'),
+        studyProgressBar: document.getElementById('study-progress-bar'),
+        studyPrevBtn: document.getElementById('study-prev-btn'),
+        studyNextBtn: document.getElementById('study-next-btn')
     });
 }
 
@@ -173,46 +176,6 @@ function initializeStudySession() {
     }
 }
 
-function updateStudyProgressBar() {
-    const shouldShowProgressBar = currentStudyMode === 'sentences' && currentFilteredSentences.length > 0;
-    if (shouldShowProgressBar) {
-        if (!studyProgressContainer) {
-            studyProgressContainer = document.createElement('div');
-            studyProgressContainer.className = 'session-progress';
-            dom.mainContent.prepend(studyProgressContainer);
-        }
-        studyProgressContainer.style.display = 'block';
-        const total = currentFilteredSentences.length;
-        const current = sentenceIndex + 1;
-        
-        let exitLinkHTML = '';
-        if (studySession) {
-            exitLinkHTML = `<a id="session-exit-link" class="session-exit-link">退出会话</a>`;
-        }
-        
-        studyProgressContainer.innerHTML = `
-            <div class="container">
-                <span class="session-progress-text">进度: ${current} / ${total}</span>
-                ${exitLinkHTML}
-            </div>
-        `;
-
-        if (studySession) {
-            document.getElementById('session-exit-link').addEventListener('click', async () => {
-                const confirmation = await showCustomConfirm('确定要退出本次专注学习吗？');
-                if (confirmation) {
-                    sessionStorage.removeItem('studySession');
-                    window.location.href = 'index.html';
-                }
-            });
-        }
-
-    } else {
-        if (studyProgressContainer) {
-            studyProgressContainer.style.display = 'none';
-        }
-    }
-}
 
 function filterAndSortSentences() {
     let sourceData = studySession ? allSentences.filter(s => new Set(studySession.sentenceIds).has(s.id)) : allSentences;
@@ -235,44 +198,106 @@ function filterAndSortSentences() {
         seenInThisSession.add(currentFilteredSentences[sentenceIndex].id);
     }
     calculateDynamicFrequencies();
+    renderStudyProgressBar();
 }
-
-function handleCardNavigation(direction) {
-    if (currentFilteredSentences.length === 0) return;
-    
-    const currentSentenceId = currentFilteredSentences[sentenceIndex].id;
-    seenInThisSession.add(currentSentenceId);
-    logStudyEvent(currentSentenceId, 'sentence');
-
-    const isCompletionTriggered = (studySession || sentenceStatusFilter !== 'all') && seenInThisSession.size >= currentFilteredSentences.length;
-
-    if (isCompletionTriggered && direction === 'next') {
-        showSessionEndModal();
+// 【新增】渲染底部进度条的函数
+function renderStudyProgressBar() {
+    if (currentFilteredSentences.length === 0) {
+        dom.studyFooterNav.style.display = 'none';
         return;
     }
 
-    const oldIndex = sentenceIndex;
-    if (direction === 'next') {
-        sentenceIndex = (sentenceIndex < currentFilteredSentences.length - 1) ? sentenceIndex + 1 : 0;
-    } else {
-        sentenceIndex = (sentenceIndex > 0) ? sentenceIndex - 1 : currentFilteredSentences.length - 1;
+    dom.studyFooterNav.style.display = 'flex';
+    let dotsHtml = '';
+    for (let i = 0; i < currentFilteredSentences.length; i++) {
+        dotsHtml += `<div class="progress-dot" data-index="${i}">${i + 1}</div>`;
     }
+    dom.studyProgressBar.innerHTML = `<div class="progress-bar-track">${dotsHtml}</div>`;
 
-    if (oldIndex !== sentenceIndex) {
-        renderSentenceCard();
-        triggerAutoplay();
-        
-        const nextSentenceObject = currentFilteredSentences[sentenceIndex];
-        const nextSentenceId = nextSentenceObject.id;
-        seenInThisSession.add(nextSentenceId);
+    // 为每个新生成的圆点绑定点击事件
+    dom.studyProgressBar.querySelectorAll('.progress-dot').forEach(dot => {
+        dot.addEventListener('click', () => {
+            sentenceIndex = parseInt(dot.dataset.index, 10);
+            renderSentenceCard();
+            updateStudyProgressBar(); // 更新状态
+        });
+    });
+}
 
-        if (!studySession) {
-            supabase.from('profiles').update({
-                last_sentence_id: nextSentenceId,
-                updated_at: new Date()
-            }).eq('id', currentUser.id).then();
+// 【新增】更新底部进度条状态的函数
+function updateStudyProgressBar() {
+    const track = dom.studyProgressBar.querySelector('.progress-bar-track');
+    if (!track) return;
+
+    track.querySelectorAll('.progress-dot').forEach((dot, index) => {
+        const sentence = currentFilteredSentences[index];
+        dot.classList.remove('current', 'mastered');
+
+        if (sentence && sentence.mastered) {
+            dot.classList.add('mastered');
         }
+        if (index === sentenceIndex) {
+            dot.classList.add('current');
+        }
+    });
+
+    const currentDot = track.children[sentenceIndex];
+    if (currentDot) {
+        currentDot.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
+
+    // 更新箭头按钮的状态
+    dom.studyPrevBtn.disabled = sentenceIndex === 0;
+    dom.studyNextBtn.disabled = sentenceIndex >= currentFilteredSentences.length - 1;
+}
+
+function handleCardNavigation(direction) {
+    if (currentFilteredSentences.length <= 1) return; // 如果只有一页，则不执行任何操作
+
+    // 增加一个简单的锁，防止在动画播放时重复触发
+    if (dom.sentenceCard.classList.contains('is-animating')) return;
+    dom.sentenceCard.classList.add('is-animating');
+
+    const isNext = direction === 'next';
+    const outClass = isNext ? 'animate-slide-out-left' : 'animate-slide-out-right';
+    const inClass = isNext ? 'animate-slide-in-right' : 'animate-slide-in-left';
+
+    // 1. 播放“离开”动画
+    dom.sentenceCard.classList.add(outClass);
+
+    // 2. 在“离开”动画结束后，更新内容并播放“进入”动画
+    dom.sentenceCard.addEventListener('animationend', () => {
+        // 更新数据
+        const oldIndex = sentenceIndex;
+        if (isNext) {
+            sentenceIndex = (sentenceIndex < currentFilteredSentences.length - 1) ? sentenceIndex + 1 : 0;
+        } else {
+            sentenceIndex = (sentenceIndex > 0) ? sentenceIndex - 1 : currentFilteredSentences.length - 1;
+        }
+
+        if (oldIndex !== sentenceIndex) {
+            // 在卡片不可见时，瞬间更新内容
+            renderSentenceCard();
+            updateStudyProgressBar();
+            const nextSentenceId = currentFilteredSentences[sentenceIndex].id;
+            seenInThisSession.add(nextSentenceId);
+            if (!studySession) {
+                supabase.from('profiles').update({ last_sentence_id: nextSentenceId }).eq('id', currentUser.id).then();
+            }
+        }
+
+        // 移除旧动画类，添加新动画类
+        dom.sentenceCard.classList.remove(outClass);
+        dom.sentenceCard.classList.add(inClass);
+
+        // 3. 在“进入”动画结束后，清理所有状态，为下一次做准备
+        dom.sentenceCard.addEventListener('animationend', () => {
+            dom.sentenceCard.classList.remove(inClass, 'is-animating');
+
+        },
+            { once: true }); // once: true 确保这个监听器只执行一次
+
+    }, { once: true });
 }
 
 function renderUI() {
@@ -485,6 +510,8 @@ async function toggleSentenceMastered() {
         await showCustomConfirm("状态更新失败！");
     } else {
         sentence.mastered = newStatus;
+        renderSentenceCard(); // 重新渲染卡片以更新顶部的状态显示
+        updateStudyProgressBar(); // 【新增】立即更新底部圆点的颜色
         if (!studySession && sentenceStatusFilter === 'unmastered') {
             const unmasteredSentences = allSentences.filter(s => !s.mastered);
             if (unmasteredSentences.length === 0) {
@@ -516,12 +543,12 @@ async function toggleWordMastered(wordId, buttonElement) {
 async function deleteCurrentSentence() {
     if (currentFilteredSentences.length === 0) return;
     const sentenceToDelete = currentFilteredSentences[sentenceIndex];
-    
+
     const confirmation = await showCustomConfirm(`确定要删除这个句子吗？\n"${sentenceToDelete.spanish_text}"`);
     if (confirmation) {
         // 1. 删除句子
         const { error } = await supabase.from('sentences').delete().eq('id', sentenceToDelete.id).eq('user_id', currentUser.id);
-        
+
         if (error) {
             await showCustomConfirm('删除失败，请检查网络或刷新页面。');
         } else {
@@ -530,7 +557,7 @@ async function deleteCurrentSentence() {
 
             await showCustomConfirm('删除成功！', false);
             setTimeout(() => document.getElementById('confirmModal').style.display = 'none', 1000);
-            
+
             // 3. 刷新数据和UI
             await fetchInitialData();
             sentenceIndex = 0; // 重置索引
@@ -589,7 +616,7 @@ async function handleAddSentence(e) {
         submitBtn.disabled = true;
         submitBtn.textContent = '保存中...';
         const { error } = await supabase.from('sentences').insert([{ spanish_text: spanishText, chinese_translation: chineseText, user_id: currentUser.id }]);
-        
+
         if (error) {
             errorEl.textContent = `保存失败: ${error.message}`;
             submitBtn.disabled = false;
@@ -602,10 +629,10 @@ async function handleAddSentence(e) {
 
             await showCustomConfirm('添加成功！', false);
             setTimeout(() => document.getElementById('confirmModal').style.display = 'none', 1000);
-            
+
             await fetchInitialData();
             filterAndSortSentences(); // 确保显示列表同步
-            
+
             // 定位到新添加的句子
             let newIndex = allSentences.findIndex(s => s.spanish_text === spanishText);
             if (newIndex === -1) newIndex = allSentences.length - 1; // 备用方案
@@ -653,13 +680,13 @@ async function handleEditSentence(e) {
         await showCustomConfirm(`更新失败: ${error.message}`);
     } else {
         dom.editSentenceModal.style.display = 'none';
-        
+
         // 2. 【修改】调用新的全局函数精确更新单词库
         await syncWordBankForSentenceChange({
             oldSentenceText: oldSentenceText,
             newSentenceText: newSpanishText
         });
-        
+
         // 3. 【修改】刷新所有数据，然后同步筛选列表，最后渲染UI
         await showCustomConfirm('更新成功！\n\n(点击任意地方关闭)', false);
         setTimeout(() => document.getElementById('confirmModal').style.display = 'none', 1000);
@@ -809,7 +836,7 @@ function setupEventListeners() {
         e.target.classList.add('active');
         renderUI();
     });
-    
+
     if (dom.sentenceCard) dom.sentenceCard.addEventListener('click', (e) => { if (e.target.closest('.card-actions, .card-footer, .highlight-word')) return; const rect = dom.sentenceCard.getBoundingClientRect(); const direction = e.clientX < (rect.left + rect.width / 2) ? 'prev' : 'next'; handleCardNavigation(direction); });
     if (dom.sentenceSpanishText) dom.sentenceSpanishText.addEventListener('click', (event) => { if (event.target.classList.contains('highlight-word')) { event.stopPropagation(); const wordText = event.target.dataset.word; const wordObject = allWords.find(w => w.spanish_word === wordText); if (wordObject) { logStudyEvent(wordObject.id, 'word'); getAiWordExplanation(wordObject); } else { showCustomConfirm(`“${wordText}” 不在您的高频词库中。`); } } });
     if (dom.wordListContainer) { dom.wordListContainer.addEventListener('click', (e) => { const target = e.target; const listItem = target.closest('.word-list-item'); if (!listItem) return; const wordId = parseInt(listItem.dataset.wordId, 10); const word = allWords.find(w => w.id === wordId); if (!word) return; supabase.from('profiles').update({ last_word_id: word.id, updated_at: new Date() }).eq('id', currentUser.id).then(); if (target.closest('.mastered-toggle-word')) { toggleWordMastered(wordId, target.closest('.mastered-toggle-word')); } else if (target.closest('.read-btn')) { readText(word.spanish_word, false, target.closest('.read-btn')); } else if (target.closest('.slow-read-btn')) { readText(word.spanish_word, true, target.closest('.slow-read-btn')); } else if (target.closest('.word-text')) { logStudyEvent(word.id, 'word'); getAiWordExplanation(word); } }); dom.wordListContainer.addEventListener('scroll', () => { if (isLoadingMoreWords) return; const { scrollTop, scrollHeight, clientHeight } = dom.wordListContainer; if (scrollHeight - scrollTop - clientHeight < 200) { isLoadingMoreWords = true; const totalRendered = (wordListPage - 1) * WORDS_PER_PAGE; if (totalRendered < currentFilteredWords.length) { renderWordList(true); } } }); }
@@ -825,6 +852,8 @@ function setupEventListeners() {
     if (dom.addSentenceForm) dom.addSentenceForm.querySelector('#cancel-add-btn').addEventListener('click', () => dom.addSentenceModal.style.display = 'none');
     if (dom.editSentenceForm) dom.editSentenceForm.addEventListener('submit', handleEditSentence);
     if (dom.editSentenceForm) dom.editSentenceForm.querySelector('#cancel-edit-btn').addEventListener('click', () => dom.editSentenceModal.style.display = 'none');
+    if (dom.studyPrevBtn) dom.studyPrevBtn.addEventListener('click', () => handleCardNavigation('prev'));
+    if (dom.studyNextBtn) dom.studyNextBtn.addEventListener('click', () => handleCardNavigation('next'));
     if (dom.aiExplanationCloseBtn) dom.aiExplanationCloseBtn.addEventListener('click', () => dom.aiExplanationModal.style.display = 'none');
     if (dom.aiWordExplanationCloseBtn) dom.aiWordExplanationCloseBtn.addEventListener('click', () => dom.aiWordExplanationModal.style.display = 'none');
     if (dom.sentenceListCloseBtn) dom.sentenceListCloseBtn.addEventListener('click', () => dom.sentenceListModal.style.display = 'none');
@@ -894,26 +923,26 @@ async function initializePage() {
                 if (profile.last_sentence_id) { lastSentenceIdToRestore = profile.last_sentence_id; }
             }
         }
-        
+
         if (lastSentenceIdToRestore) {
             const lastSentence = allSentences.find(s => s.id === lastSentenceIdToRestore);
             if (lastSentence && lastSentence.mastered && sentenceStatusFilter === 'unmastered') {
                 sentenceStatusFilter = 'all';
             }
         }
-        
+
         if (studySession) { sentenceIndex = 0; }
-        
+
         if (dom.studyModeSwitcher) { const currentActive = dom.studyModeSwitcher.querySelector('.active'); if (currentActive) currentActive.classList.remove('active'); const activeButton = dom.studyModeSwitcher.querySelector(`[data-mode="${currentStudyMode}"]`); if (activeButton) activeButton.classList.add('active'); }
         if (dom.sentenceStatusFilterGroup) { const currentActive = dom.sentenceStatusFilterGroup.querySelector('.active'); if (currentActive) currentActive.classList.remove('active'); const newActive = dom.sentenceStatusFilterGroup.querySelector(`[data-value="${sentenceStatusFilter}"]`); if (newActive) newActive.classList.add('active'); }
-        
+
         filterAndSortSentences();
 
         if (lastSentenceIdToRestore && !studySession) {
             const restoredIndex = currentFilteredSentences.findIndex(s => s.id === lastSentenceIdToRestore);
             if (restoredIndex !== -1) { sentenceIndex = restoredIndex; }
         }
-        
+
         setupEventListeners();
         initializeSwipeGestures();
         renderUI();

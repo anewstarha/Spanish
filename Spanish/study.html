@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>西班牙语学习助手</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <header>
         <div class="container header-container">
@@ -15,7 +17,11 @@
             <nav class="header-actions">
                 <div class="dropdown-container">
                     <button class="icon-btn-header user-avatar-btn" id="user-menu-btn" title="用户菜单">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
                     </button>
                     <div class="dropdown-menu" id="user-menu">
                         <div class="dropdown-header" id="user-menu-greeting">你好, ...</div>
@@ -43,21 +49,29 @@
 
                         <div class="filter-container">
                             <button class="icon-btn-header" id="filter-menu-btn" title="显示选项">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path
+                                        d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z">
+                                    </path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
                             </button>
-                            
+
                             <div class="actions-panel" id="filter-panel">
-                                 <h4>显示选项</h4>
-                                 <div class="control-group-wrapper" id="autoplay-section">
+                                <h4>显示选项</h4>
+                                <div class="control-group-wrapper" id="autoplay-section">
                                     <div class="control-group">
                                         <label class="control-label">自动朗读</label>
                                         <button class="btn btn-autoplay-toggle" id="autoplay-toggle-btn">关</button>
                                     </div>
                                     <hr class="dropdown-divider">
-                                 </div>
-                                 
-                                 <div class="control-group-wrapper">
-                                    <label class="control-label" style="margin-bottom: 0.5rem; text-align: left; width: 100%;">筛选与排序</label>
+                                </div>
+
+                                <div class="control-group-wrapper">
+                                    <label class="control-label"
+                                        style="margin-bottom: 0.5rem; text-align: left; width: 100%;">筛选与排序</label>
                                     <div id="sentence-filters" class="control-group-wrapper">
                                         <div class="control-group">
                                             <label class="control-label">状态：</label>
@@ -93,7 +107,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                 </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -109,43 +123,126 @@
                             </div>
                             <div class="card-actions">
                                 <div class="playback-group">
-                                    <div class="action-item"><button class="icon-btn" id="index-slow-read-btn" title="慢速朗读"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></button><span class="action-label">慢速朗读</span></div>
-                                    <div class="action-item"><button class="icon-btn" id="index-read-btn" title="朗读"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></button><span class="action-label">朗读</span></div>
-                                    <div class="action-item"><button class="icon-btn" id="index-word-read-btn" title="逐词朗读"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10V8a2 2 0 0 1 2-2h2"></path><path d="M14 4h4a2 2 0 0 1 2 2v2"></path><path d="M20 14v4a2 2 0 0 1-2 2h-2"></path><path d="M10 20H6a2 2 0 0 1-2-2v-2"></path><line x1="7" y1="12" x2="17" y2="12"></line></svg></button><span class="action-label">逐词朗读</span></div>
+                                    <div class="action-item"><button class="icon-btn" id="index-slow-read-btn"
+                                            title="慢速朗读"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <polyline points="12 6 12 12 16 14"></polyline>
+                                            </svg></button><span class="action-label">慢速朗读</span></div>
+                                    <div class="action-item"><button class="icon-btn" id="index-read-btn"
+                                            title="朗读"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07">
+                                                </path>
+                                            </svg></button><span class="action-label">朗读</span></div>
+                                    <div class="action-item"><button class="icon-btn" id="index-word-read-btn"
+                                            title="逐词朗读"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M4 10V8a2 2 0 0 1 2-2h2"></path>
+                                                <path d="M14 4h4a2 2 0 0 1 2 2v2"></path>
+                                                <path d="M20 14v4a2 2 0 0 1-2 2h-2"></path>
+                                                <path d="M10 20H6a2 2 0 0 1-2-2v-2"></path>
+                                                <line x1="7" y1="12" x2="17" y2="12"></line>
+                                            </svg></button><span class="action-label">逐词朗读</span></div>
                                 </div>
-                                <div class="action-item action-item-right"><button class="icon-btn" id="index-ai-explain-btn" title="AI解释"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"></path><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg></button><span class="action-label">AI解释</span></div>
+                                <div class="action-item action-item-right"><button class="icon-btn"
+                                        id="index-ai-explain-btn" title="AI解释"><svg xmlns="http://www.w3.org/2000/svg"
+                                            width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"></path>
+                                            <path d="M12 16v-4"></path>
+                                            <path d="M12 8h.01"></path>
+                                        </svg></button><span class="action-label">AI解释</span></div>
                             </div>
                         </div>
                         <div class="card-footer">
-                            <div id="mastered-toggle" class="mastered-toggle" title="标记已掌握"><svg class="mastered-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-8.79"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg><span>已掌握</span></div>
-                            <div class="footer-actions"><a id="add-sentence-link">新增</a><a id="edit-sentence-link">编辑</a><a id="delete-sentence-link">删除</a></div>
+                            <div id="mastered-toggle" class="mastered-toggle" title="标记已掌握"><svg class="mastered-icon"
+                                    xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-8.79"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg><span>已掌握</span></div>
+                            <div class="footer-actions"><a id="add-sentence-link">新增</a><a
+                                    id="edit-sentence-link">编辑</a><a id="delete-sentence-link">删除</a></div>
+                        </div>
+                        <div class="quiz-footer" id="study-footer-nav" style="display: none;">
+                            <button id="study-prev-btn" class="progress-arrow-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <div id="study-progress-bar" class="progress-bar-container">
+                            </div>
+                            <button id="study-next-btn" class="progress-arrow-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
                         </div>
                     </div>
                     <div class="study-card-with-nav" id="word-card-container" style="display: none;">
-                        </div>
+                    </div>
                 </section>
             </div>
         </div>
     </main>
-    <div id="confirmModal" class="modal"><div class="modal-content"><p id="confirmMessage"></p><div class="modal-buttons"><button id="confirmBtn" class="btn btn-primary">确定</button><button id="cancelBtn" class="btn btn-secondary">取消</button></div></div></div>
-    <div id="aiExplanationModal" class="modal"><div class="modal-content"><span class="close-button" id="aiExplanationCloseBtn">&times;</span><h3 id="aiExplanationTitle"></h3><div id="aiExplanationContent" class="explanation-content"></div></div></div>
-    <div id="addSentenceModal" class="modal"><div class="modal-content">
-        <h3 id="add-sentence-title">新增句子</h3>
-        <form id="add-sentence-form" class="modal-form">
-            <div id="add-spanish-group" class="form-group"><textarea id="new-spanish-text" placeholder="输入西班牙语句子..." required></textarea></div>
-            <div id="add-chinese-group" class="form-group" style="display: none;"><textarea id="new-chinese-text" placeholder="AI正在生成翻译..."></textarea></div>
-            <p id="add-sentence-error" class="error-text"></p>
-            <p class="modal-secondary-action">
-                需要一次性添加多条？ <a href="manage.html">点击这里批量添加</a>
-            </p>
-            <div class="modal-buttons">
-                <button type="submit" id="add-sentence-submit-btn" class="btn btn-primary">获取翻译</button>
-                <button type="button" id="cancel-add-btn" class="btn btn-secondary">取消</button>
-            </div>
-        </form>
-    </div></div>
-    <div id="editSentenceModal" class="modal"><div class="modal-content"><h3>编辑句子</h3><form id="edit-sentence-form" class="modal-form"><input type="hidden" id="edit-sentence-id"><textarea id="edit-spanish-text" required></textarea><textarea id="edit-chinese-text" required></textarea><div class="modal-buttons"><button type="submit" class="btn btn-primary">保存更改</button><button type="button" id="cancel-edit-btn" class="btn btn-secondary">取消</button></div></form></div></div>
-    <div id="sentenceListModal" class="modal"><div class="modal-content"><span class="close-button" id="sentenceListCloseBtn">&times;</span><h3 id="sentenceListTitle"></h3><div id="sentence-list-content" class="sentence-list-content"></div></div></div>
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <p id="confirmMessage"></p>
+            <div class="modal-buttons"><button id="confirmBtn" class="btn btn-primary">确定</button><button id="cancelBtn"
+                    class="btn btn-secondary">取消</button></div>
+        </div>
+    </div>
+    <div id="aiExplanationModal" class="modal">
+        <div class="modal-content"><span class="close-button" id="aiExplanationCloseBtn">&times;</span>
+            <h3 id="aiExplanationTitle"></h3>
+            <div id="aiExplanationContent" class="explanation-content"></div>
+        </div>
+    </div>
+    <div id="addSentenceModal" class="modal">
+        <div class="modal-content">
+            <h3 id="add-sentence-title">新增句子</h3>
+            <form id="add-sentence-form" class="modal-form">
+                <div id="add-spanish-group" class="form-group"><textarea id="new-spanish-text" placeholder="输入西班牙语句子..."
+                        required></textarea></div>
+                <div id="add-chinese-group" class="form-group" style="display: none;"><textarea id="new-chinese-text"
+                        placeholder="AI正在生成翻译..."></textarea></div>
+                <p id="add-sentence-error" class="error-text"></p>
+                <p class="modal-secondary-action">
+                    需要一次性添加多条？ <a href="manage.html">点击这里批量添加</a>
+                </p>
+                <div class="modal-buttons">
+                    <button type="submit" id="add-sentence-submit-btn" class="btn btn-primary">获取翻译</button>
+                    <button type="button" id="cancel-add-btn" class="btn btn-secondary">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="editSentenceModal" class="modal">
+        <div class="modal-content">
+            <h3>编辑句子</h3>
+            <form id="edit-sentence-form" class="modal-form"><input type="hidden" id="edit-sentence-id"><textarea
+                    id="edit-spanish-text" required></textarea><textarea id="edit-chinese-text" required></textarea>
+                <div class="modal-buttons"><button type="submit" class="btn btn-primary">保存更改</button><button
+                        type="button" id="cancel-edit-btn" class="btn btn-secondary">取消</button></div>
+            </form>
+        </div>
+    </div>
+    <div id="sentenceListModal" class="modal">
+        <div class="modal-content"><span class="close-button" id="sentenceListCloseBtn">&times;</span>
+            <h3 id="sentenceListTitle"></h3>
+            <div id="sentence-list-content" class="sentence-list-content"></div>
+        </div>
+    </div>
     <div id="aiWordExplanationModal" class="modal">
         <div class="modal-content ai-word-modal-content">
             <span class="close-button" id="aiWordExplanationCloseBtn">&times;</span>
@@ -156,4 +253,5 @@
 
     <script type="module" src="js/study-main.js"></script>
 </body>
+
 </html>

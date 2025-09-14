@@ -1,0 +1,43 @@
+/* 卡片切换动画 */
+.study-card, .quiz-card {
+    /* 将 backface-visibility 设置为 hidden
+      可以防止在3D变换（如下面的翻转动画）中元素背面闪烁的问题，
+      同时也能为动画提供一些性能优化。
+    */
+    backface-visibility: hidden;
+}
+
+/* 动画类：定义动画效果 */
+.animate-slide-out-left {
+    animation: slideOutLeft 0.3s ease-in forwards;
+}
+.animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out forwards;
+}
+.animate-slide-out-right {
+    animation: slideOutRight 0.3s ease-in forwards;
+}
+.animate-slide-in-left {
+    animation: slideInLeft 0.3s ease-out forwards;
+}
+
+/* 关键帧：定义动画的具体动作 */
+@keyframes slideOutLeft {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(-100%); opacity: 0; }
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOutRight {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
+
+@keyframes slideInLeft {
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}

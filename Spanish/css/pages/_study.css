@@ -541,3 +541,64 @@
         font-size: 1rem;
     }
 }
+/* 【新增】学习页面底部导航栏样式 (从 quiz.css 借鉴) */
+#study-footer-nav {
+    width: 100%;
+    max-width: 600px;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+#study-progress-bar {
+    flex-grow: 1;
+    overflow-x: auto;
+    cursor: grab;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: calc(50% - 16px); /* 让圆点能居中 */
+}
+
+#study-progress-bar::-webkit-scrollbar {
+    display: none;
+}
+
+#study-progress-bar .progress-bar-track {
+    display: flex;
+    gap: 8px;
+    padding: 5px;
+}
+
+#study-progress-bar .progress-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--muted-color);
+    scroll-snap-align: center;
+}
+
+/* 【新增】已掌握句子的圆点样式 */
+#study-progress-bar .progress-dot.mastered {
+    background-color: var(--success-color);
+    color: white;
+}
+
+#study-progress-bar .progress-dot.current {
+    border-color: var(--primary-color);
+    transform: scale(1.2);
+    color: var(--primary-color);
+}

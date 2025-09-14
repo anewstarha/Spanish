@@ -17,6 +17,7 @@
 @import "css/components/_forms.css";
 @import "css/components/_modals.css";
 @import "css/components/_dropdown.css";
+@import "css/components/_animations.css";
 
 /* 4. 导入特定页面的样式 */
 @import "css/pages/_auth.css";
