@@ -43,6 +43,7 @@ const dom = {
     wrongAnswersList: document.getElementById('wrong-answers-list'),
     retestWrongBtn: document.getElementById('retest-wrong-btn'),
     newQuizBtn: document.getElementById('new-quiz-btn'),
+    quizPageWrapper: document.getElementById('quiz-page-wrapper')
 };
 
 // --- 3. Core Logic ---
@@ -465,6 +466,9 @@ async function initializePage() {
         await fetchAllData();
         await loadStats();
     }
+    document.body.classList.remove('uninitialized');
+    dom.quizPageWrapper.style.visibility = 'visible';
+    dom.quizPageWrapper.style.opacity = '1';
 }
 
 initializePage();

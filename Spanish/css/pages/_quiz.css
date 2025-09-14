@@ -293,3 +293,9 @@
     margin-top: 0.5rem;
     line-height: 1.4;
 }
+/* 【新增】解决UI闪烁问题的CSS */
+.uninitialized #quiz-page-wrapper {
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}

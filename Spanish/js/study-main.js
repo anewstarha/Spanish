@@ -252,52 +252,64 @@ function updateStudyProgressBar() {
 }
 
 function handleCardNavigation(direction) {
-    if (currentFilteredSentences.length <= 1) return; // 如果只有一页，则不执行任何操作
+    // 【修改】调整这里的逻辑
+    const isCompletionTriggered = (studySession || sentenceStatusFilter !== 'all') && seenInThisSession.size >= currentFilteredSentences.length;
 
-    // 增加一个简单的锁，防止在动画播放时重复触发
-    if (dom.sentenceCard.classList.contains('is-animating')) return;
-    dom.sentenceCard.classList.add('is-animating');
+    // 如果是最后一题（或只有一题）且用户想去“下一题”，则显示结束弹窗
+    if ((currentFilteredSentences.length <= 1 || isCompletionTriggered) && direction === 'next') {
+        // 记录当前这最后一题的学习状态
+        const currentSentenceId = currentFilteredSentences[sentenceIndex].id;
+        seenInThisSession.add(currentSentenceId);
+        logStudyEvent(currentSentenceId, 'sentence');
+        
+        showSessionEndModal();
+        return;
+    }
+    
+    // 如果列表不止一句话，才执行切换动画
+    if (currentFilteredSentences.length > 1) {
+        if (dom.sentenceCard.classList.contains('is-animating')) return;
+        dom.sentenceCard.classList.add('is-animating');
 
-    const isNext = direction === 'next';
-    const outClass = isNext ? 'animate-slide-out-left' : 'animate-slide-out-right';
-    const inClass = isNext ? 'animate-slide-in-right' : 'animate-slide-in-left';
+        const isNext = direction === 'next';
+        const outClass = isNext ? 'animate-slide-out-left' : 'animate-slide-out-right';
+        const inClass = isNext ? 'animate-slide-in-right' : 'animate-slide-in-left';
 
-    // 1. 播放“离开”动画
-    dom.sentenceCard.classList.add(outClass);
+        const currentSentenceId = currentFilteredSentences[sentenceIndex].id;
+        seenInThisSession.add(currentSentenceId);
+        logStudyEvent(currentSentenceId, 'sentence');
 
-    // 2. 在“离开”动画结束后，更新内容并播放“进入”动画
-    dom.sentenceCard.addEventListener('animationend', () => {
-        // 更新数据
-        const oldIndex = sentenceIndex;
-        if (isNext) {
-            sentenceIndex = (sentenceIndex < currentFilteredSentences.length - 1) ? sentenceIndex + 1 : 0;
-        } else {
-            sentenceIndex = (sentenceIndex > 0) ? sentenceIndex - 1 : currentFilteredSentences.length - 1;
-        }
+        dom.sentenceCard.classList.add(outClass);
 
-        if (oldIndex !== sentenceIndex) {
-            // 在卡片不可见时，瞬间更新内容
-            renderSentenceCard();
-            updateStudyProgressBar();
-            const nextSentenceId = currentFilteredSentences[sentenceIndex].id;
-            seenInThisSession.add(nextSentenceId);
-            if (!studySession) {
-                supabase.from('profiles').update({ last_sentence_id: nextSentenceId }).eq('id', currentUser.id).then();
-            }
-        }
-
-        // 移除旧动画类，添加新动画类
-        dom.sentenceCard.classList.remove(outClass);
-        dom.sentenceCard.classList.add(inClass);
-
-        // 3. 在“进入”动画结束后，清理所有状态，为下一次做准备
         dom.sentenceCard.addEventListener('animationend', () => {
-            dom.sentenceCard.classList.remove(inClass, 'is-animating');
+            const oldIndex = sentenceIndex;
+            if (isNext) {
+                sentenceIndex = (sentenceIndex < currentFilteredSentences.length - 1) ? sentenceIndex + 1 : 0;
+            } else {
+                sentenceIndex = (sentenceIndex > 0) ? sentenceIndex - 1 : currentFilteredSentences.length - 1;
+            }
 
-        },
-            { once: true }); // once: true 确保这个监听器只执行一次
+            if (oldIndex !== sentenceIndex) {
+                renderSentenceCard();
+                updateStudyProgressBar();
+                triggerAutoplay(); 
+                
+                const nextSentenceId = currentFilteredSentences[sentenceIndex].id;
+                seenInThisSession.add(nextSentenceId);
+                if (!studySession) {
+                    supabase.from('profiles').update({ last_sentence_id: nextSentenceId }).eq('id', currentUser.id).then();
+                }
+            }
 
-    }, { once: true });
+            dom.sentenceCard.classList.remove(outClass);
+            dom.sentenceCard.classList.add(inClass);
+
+            dom.sentenceCard.addEventListener('animationend', () => {
+                dom.sentenceCard.classList.remove(inClass, 'is-animating');
+            }, { once: true });
+
+        }, { once: true });
+    }
 }
 
 function renderUI() {
