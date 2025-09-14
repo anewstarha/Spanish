@@ -17,6 +17,8 @@ let wrongAnswers = [];
 let userHasScrolledManually = false;
 let allStudiedIds = new Set();
 let allTestedIds = new Map();
+let isSessionQuiz = false;
+let isAutoplayThisSession = false; 
 
 // --- 2. DOM Elements ---
 const dom = {
@@ -128,9 +130,59 @@ function startQuiz() {
     currentQuestionIndex = 0;
     answeredStates.clear();
     userHasScrolledManually = false;
+    
+    // 先显示测试的主视图框架
     dom.setupView.style.display = 'none';
     dom.resultsView.style.display = 'none';
     dom.quizView.style.display = 'block';
+
+    // 【修改】不再直接显示题目，而是调用新函数来弹出提示框
+    promptForAutoplay();
+}
+// 【新增】弹出自动播放确认框的函数
+async function promptForAutoplay() {
+    // 准备弹窗内容和按钮文本
+    const message = '音频将自动播放，请确保您当前的环境适合收听。';
+    const confirmText = '好的，自动播放';
+    const cancelText = '本次手动播放';
+
+    // 复用现有的 confirmModal 元素
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmMessage = document.getElementById('confirmMessage');
+    const confirmBtn = document.getElementById('confirmBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+
+    // 设置自定义内容
+    confirmMessage.innerText = message;
+    confirmBtn.textContent = confirmText;
+    cancelBtn.textContent = cancelText;
+    confirmBtn.style.display = 'inline-flex';
+    cancelBtn.style.display = 'inline-flex';
+
+    const userChoicePromise = new Promise(resolve => {
+        const confirmHandler = () => resolve(true);
+        const cancelHandler = () => resolve(false);
+
+        confirmBtn.onclick = confirmHandler;
+        cancelBtn.onclick = cancelHandler;
+    });
+    
+    confirmModal.style.display = 'flex';
+
+    const userChoseAutoplay = await userChoicePromise;
+
+    // 清理和关闭弹窗
+    confirmModal.style.display = 'none';
+    confirmBtn.onclick = null;
+    cancelBtn.onclick = null;
+    // 还原按钮文本以防影响其他地方的使用
+    confirmBtn.textContent = '确定';
+    cancelBtn.textContent = '取消';
+
+    // 根据用户的选择，设置本次测试的自动播放状态
+    isAutoplayThisSession = userChoseAutoplay;
+
+    // 用户做出选择后，才开始渲染和显示第一道题
     renderProgressBar();
     displayQuestion();
 }
@@ -163,6 +215,11 @@ function displayQuestion() {
     dom.quizSlowReadBtn.onclick = () => readText(audioText, true, dom.quizSlowReadBtn);
     updateProgressBar();
     updateNavButtons();
+
+    // 【修改】在函数的末尾，检查是否需要自动播放
+    if (isAutoplayThisSession && !isAnswered) {
+        readText(audioText, false, dom.quizReadBtn);
+    }
 }
 function displaySentenceQuestion(question, isAnswered) { const distractors = allSentences.filter(s => s.id !== question.id).sort(() => 0.5 - Math.random()).slice(0, 3).map(s => s.chinese_translation); const options = [question.chinese_translation, ...distractors].sort(() => 0.5 - Math.random()); let optionsHtml = '<div class="mcq-options">'; options.forEach((option, index) => { const letter = String.fromCharCode(65 + index); optionsHtml += `<button class="btn mcq-btn" data-option="${option}"><span class="mcq-letter">${letter}</span><span class="mcq-text">${option}</span></button>`; }); optionsHtml += '</div>'; dom.questionContent.innerHTML = optionsHtml; if (isAnswered) { const { isCorrect, userAnswer } = answeredStates.get(question.id); document.querySelectorAll('.mcq-btn').forEach(btn => { btn.disabled = true; if (btn.dataset.option === question.chinese_translation) btn.classList.add('correct'); if (btn.dataset.option === userAnswer && !isCorrect) btn.classList.add('incorrect'); }); } else { dom.questionContent.querySelectorAll('.mcq-btn').forEach(btn => { btn.addEventListener('click', (e) => { const clickedButton = e.target.closest('.mcq-btn'); checkSentenceAnswer(clickedButton.dataset.option === question.chinese_translation, question, clickedButton); }); }); } }
 function displayWordQuestion(question, isAnswered) { const contentHtml = `<div class="dictation-group"><div class="dictation-word-translation">${question.chinese_translation}</div><input type="text" id="dictation-input" class="form-input" placeholder="请在此输入单词..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"><div id="special-chars" class="special-chars"><button>á</button><button>é</button><button>í</button><button>ó</button><button>ú</button><button>ñ</button><button>ü</button></div><button id="check-dictation-btn" class="btn btn-primary">检查答案</button></div>`; dom.questionContent.innerHTML = contentHtml; const input = document.getElementById('dictation-input'); const checkBtn = document.getElementById('check-dictation-btn'); if (isAnswered) { const { userAnswer } = answeredStates.get(question.id); input.value = userAnswer; input.disabled = true; checkBtn.disabled = true; } else { document.getElementById('special-chars').querySelectorAll('button').forEach(btn => { btn.addEventListener('click', () => { input.value += btn.textContent; input.focus(); }); }); checkBtn.addEventListener('click', () => checkWordAnswer(input.value.trim(), question)); input.addEventListener('keydown', (e) => { if (e.key === 'Enter') checkBtn.click(); }); input.focus(); } }
@@ -253,6 +310,65 @@ function setupEventListeners() {
     dom.progressNextBtn.addEventListener('click', nextQuestion);
 }
 
+// 【新增】初始化测试页面的滑动切换功能
+function initializeSwipeGestures() {
+    const quizView = dom.quizView;
+    if (!quizView) return;
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+    let isSwipeStartedOnInteractiveElement = false;
+    const swipeThreshold = 50; // 最小滑动距离
+
+    quizView.addEventListener('touchstart', (event) => {
+        const target = event.target;
+        
+        // 【关键】检查触摸是否开始于一个按钮或输入框
+        if (target.closest('button, input, a, .mcq-btn')) {
+            isSwipeStartedOnInteractiveElement = true;
+            return; // 如果是，则不启动滑动逻辑
+        }
+        isSwipeStartedOnInteractiveElement = false;
+
+        touchStartX = event.touches[0].clientX;
+        touchStartY = event.touches[0].clientY;
+    }, { passive: true });
+
+    quizView.addEventListener('touchend', (event) => {
+        if (isSwipeStartedOnInteractiveElement) {
+            return; // 如果触摸开始于交互元素，则忽略本次操作
+        }
+
+        touchEndX = event.changedTouches[0].clientX;
+        touchEndY = event.changedTouches[0].clientY;
+        handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe() {
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+
+        // 检查是否为有效的水平滑动
+        // 1. 水平距离超过阈值
+        // 2. 水平距离大于垂直距离（避免与页面滚动冲突）
+        if (Math.abs(deltaX) > swipeThreshold && Math.abs(deltaX) > Math.abs(deltaY)) {
+            if (deltaX < 0) {
+                // 向左滑动 (下一题)
+                // 只有在下一题按钮可用时才执行
+                if (!dom.progressNextBtn.disabled) {
+                    nextQuestion();
+                }
+            } else {
+                // 向右滑动 (上一题)
+                if (!dom.progressPrevBtn.disabled) {
+                    prevQuestion();
+                }
+            }
+        }
+    }
+}
 // --- 4. Page Initialization ---
 
 async function initializePage() {
@@ -264,6 +380,7 @@ async function initializePage() {
     await initializeHeader(currentUser);
     initializeDropdowns();
     setupEventListeners(); 
+    initializeSwipeGestures(); 
 
     if (quizSessionData) {
         console.log("检测到会话测试任务，进入会话测试模式。");

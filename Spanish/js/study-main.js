@@ -830,6 +830,41 @@ function setupEventListeners() {
     if (dom.sentenceListCloseBtn) dom.sentenceListCloseBtn.addEventListener('click', () => dom.sentenceListModal.style.display = 'none');
 }
 
+// 【新增】初始化学习卡片的滑动切换功能
+function initializeSwipeGestures() {
+    const card = dom.sentenceCard;
+    if (!card) return;
+
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const swipeThreshold = 50; // 最小滑动距离
+
+    card.addEventListener('touchstart', (event) => {
+        // event.touches[0] 代表第一个接触屏幕的手指
+        touchStartX = event.touches[0].clientX;
+    }, { passive: true }); // passive: true 提升滚动性能
+
+    card.addEventListener('touchend', (event) => {
+        // event.changedTouches[0] 代表离开屏幕的那个手指
+        touchEndX = event.changedTouches[0].clientX;
+        handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe() {
+        const deltaX = touchEndX - touchStartX;
+
+        // 检查滑动距离是否超过阈值
+        if (Math.abs(deltaX) > swipeThreshold) {
+            if (deltaX < 0) {
+                // 向左滑动 (下一题)
+                handleCardNavigation('next');
+            } else {
+                // 向右滑动 (上一题)
+                handleCardNavigation('prev');
+            }
+        }
+    }
+}
 async function initializePage() {
     currentUser = await protectPage();
     if (!currentUser) return;
@@ -880,6 +915,7 @@ async function initializePage() {
         }
         
         setupEventListeners();
+        initializeSwipeGestures();
         renderUI();
         updateDrawerContext();
     }
