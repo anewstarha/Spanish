@@ -65,26 +65,46 @@ export function showCustomConfirm(message, showButtons = true) {
 }
 
 export async function readText(text, isSlow = false, button = null) {
-    // 不再在此处调用 unlock, 依赖全局解锁
+    // 【修改】针对 Safari 的核心修复：同步解锁音频
+    // 在任何 await 异步操作之前，立即响应用户的点击事件，播放一段无声音频以获取播放许可。
+    const silentSoundSrc = "data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAAgAAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV";
+    
+    // 只有在音频暂停时才需要“解锁”
+    if (audio.paused) {
+        audio.src = silentSoundSrc;
+        audio.play().catch(() => {
+            // 忽略这里的任何错误，目的只是为了触发用户手势
+        });
+    }
+    // --- 同步解锁结束 ---
+
     if (!text) return;
     const TTS_URL = 'https://rvarfascuwvponxwdeoe.supabase.co/functions/v1/tts';
+
+    // 停止当前可能正在播放的任何音频
     if (!audio.paused) {
         audio.pause();
         audio.currentTime = 0;
     }
+
     document.querySelectorAll('.icon-btn.playing, .highlight-word.playing').forEach(btn => btn.classList.remove('playing'));
     if (button) button.classList.add('playing');
+
     try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) throw new Error("用户未登录或会话已过期，请重新登录。");
+        
         const response = await fetch(TTS_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
             body: JSON.stringify({ text, isSlow }),
         });
+        
         if (!response.ok) throw new Error(`TTS API 错误 (${response.status}): ${await response.text()}`);
+        
         const data = await response.json();
         audio.src = `data:audio/mp3;base64,${data.audioContent}`;
+        
         await new Promise((resolve, reject) => {
             audio.onended = () => { if (button) button.classList.remove('playing'); resolve(); };
             audio.onerror = (e) => { if (button) button.classList.remove('playing'); reject(new Error("音频播放时发生错误。")); console.error(e); };

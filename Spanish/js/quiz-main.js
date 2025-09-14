@@ -44,7 +44,32 @@ const dom = {
 };
 
 // --- 3. Core Logic ---
-function showFeedback(question) { if (!question || !answeredStates.has(question.id)) { dom.feedbackContainer.innerHTML = ''; return; } const { isCorrect } = answeredStates.get(question.id); const questionType = question.spanish_text ? 'sentences' : 'words'; if (isCorrect) { dom.feedbackContainer.innerHTML = `<div class="feedback correct">回答正确！</div>`; } else { if (questionType === 'sentences') { dom.feedbackContainer.innerHTML = `<div class="feedback incorrect">回答错误！</div>`; } else { const correctAnswer = question.spanish_word; dom.feedbackContainer.innerHTML = `<div class="feedback incorrect">回答错误！正确答案是：<br><strong>${correctAnswer}</strong></div>`; } } }
+function showFeedback(question) {
+    if (!question || !answeredStates.has(question.id)) {
+        dom.feedbackContainer.innerHTML = '';
+        return;
+    }
+
+    const { isCorrect } = answeredStates.get(question.id);
+    const questionType = question.spanish_text ? 'sentences' : 'words';
+
+    if (isCorrect) {
+        dom.feedbackContainer.innerHTML = `<div class="feedback correct">回答正确！</div>`;
+    } else {
+        if (questionType === 'sentences') {
+            // 【修改】当句子答错时，显示西班牙语原文
+            dom.feedbackContainer.innerHTML = `
+                <div class="feedback incorrect">
+                    回答错误！
+                    <div class="feedback-note">${question.spanish_text}</div>
+                </div>
+            `;
+        } else {
+            const correctAnswer = question.spanish_word;
+            dom.feedbackContainer.innerHTML = `<div class="feedback incorrect">回答错误！正确答案是：<br><strong>${correctAnswer}</strong></div>`;
+        }
+    }
+}
 async function fetchAllData() { const { data: sentences, error: sError } = await supabase.from('sentences').select('*').eq('user_id', currentUser.id); if (sError) console.error('Error fetching sentences', sError); allSentences = sentences || []; const { data: words, error: wError } = await supabase.from('high_frequency_words').select('*').eq('user_id', currentUser.id); if (wError) console.error('Error fetching words', wError); allWords = words || []; }
 function updateStatCounts() { const contentType = dom.contentTypeSelector.querySelector('.active').dataset.type; const sourceData = contentType === 'sentences' ? allSentences : allWords; const studyScope = dom.studyScopeSelector.querySelector('.active').dataset.scope; let initialPool = []; if (studyScope === 'all') { initialPool = [...sourceData]; } else if (studyScope === 'studied') { initialPool = sourceData.filter(item => allStudiedIds.has(item.id)); } else { initialPool = sourceData.filter(item => !allStudiedIds.has(item.id)); } const stats = { untested: initialPool.filter(item => !allTestedIds.has(String(item.id))).length, incorrect: initialPool.filter(item => allTestedIds.get(String(item.id)) === false).length, correct: initialPool.filter(item => allTestedIds.get(String(item.id)) === true).length, }; dom.testScopeSelection.querySelector('input[value="untested"]').nextElementSibling.textContent = ` 未测试 (${stats.untested} 条)`; dom.testScopeSelection.querySelector('input[value="incorrect"]').nextElementSibling.textContent = ` 曾在测试中答错 (${stats.incorrect} 条)`; dom.testScopeSelection.querySelector('input[value="correct"]').nextElementSibling.textContent = ` 曾在测试中答对 (${stats.correct} 条)`; }
 async function loadStats() {
@@ -143,15 +168,33 @@ function displaySentenceQuestion(question, isAnswered) { const distractors = all
 function displayWordQuestion(question, isAnswered) { const contentHtml = `<div class="dictation-group"><div class="dictation-word-translation">${question.chinese_translation}</div><input type="text" id="dictation-input" class="form-input" placeholder="请在此输入单词..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"><div id="special-chars" class="special-chars"><button>á</button><button>é</button><button>í</button><button>ó</button><button>ú</button><button>ñ</button><button>ü</button></div><button id="check-dictation-btn" class="btn btn-primary">检查答案</button></div>`; dom.questionContent.innerHTML = contentHtml; const input = document.getElementById('dictation-input'); const checkBtn = document.getElementById('check-dictation-btn'); if (isAnswered) { const { userAnswer } = answeredStates.get(question.id); input.value = userAnswer; input.disabled = true; checkBtn.disabled = true; } else { document.getElementById('special-chars').querySelectorAll('button').forEach(btn => { btn.addEventListener('click', () => { input.value += btn.textContent; input.focus(); }); }); checkBtn.addEventListener('click', () => checkWordAnswer(input.value.trim(), question)); input.addEventListener('keydown', (e) => { if (e.key === 'Enter') checkBtn.click(); }); input.focus(); } }
 function checkSentenceAnswer(isCorrect, question, clickedButton) {
     userHasScrolledManually = false;
+    
+    // 【修改】核心修复逻辑在此
+    // 禁用所有按钮
     document.querySelectorAll('.mcq-btn').forEach(btn => {
         btn.disabled = true;
-        if (btn.dataset.option === question.chinese_translation) btn.classList.add('correct');
+        // 为正确答案添加 'correct' 类
+        if (btn.dataset.option === question.chinese_translation) {
+            btn.classList.add('correct');
+        }
     });
+
+    // 如果回答错误，为被点击的按钮添加 'incorrect' 类
+    if (!isCorrect) {
+        clickedButton.classList.add('incorrect');
+    }
+    // --- 修复结束 ---
+
     answeredStates.set(question.id, { isCorrect, question, userAnswer: clickedButton.dataset.option });
     showFeedback(question);
     logAttempt(question.id, isCorrect, 'sentence');
     updateProgressBar();
     updateNavButtons();
+    if (currentQuestionIndex >= quizQuestions.length - 1) {
+        setTimeout(() => {
+            handleQuizCompletion();
+        }, 2500);
+    }
 }
 function checkWordAnswer(userAnswer, question) {
     userHasScrolledManually = false;

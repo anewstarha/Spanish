@@ -164,19 +164,18 @@
 }
 
 .feedback-container {
-    min-height: 40px;
     padding-top: 0;
     text-align: center;
     font-weight: bold;
+    margin-bottom: 1rem;
 }
-
 .feedback.correct { color: var(--success-color); }
 .feedback.incorrect { color: var(--danger-color); }
 .feedback-note { font-size: 0.9rem; color: var(--muted-color); font-weight: normal; }
 
 .quiz-footer {
-    margin-top: 2rem;
-    padding-top: 1.5rem;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
     border-top: 1px solid var(--border-color);
     display: flex;
     align-items: center;
@@ -277,6 +276,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    margin-top: 2.5rem; 
     gap: 1.5rem; /* 为按钮组添加和学习页面一致的水平间距 */
     margin-bottom: 1.5rem; /* 增加与下方反馈区域的距离，让布局更协调 */
 }
@@ -284,4 +284,12 @@
 .card-actions .action-item-right {
     position: static;
     transform: none;
+}
+/* 【新增】用于句子题错误提示中，显示西班牙语原文的样式 */
+.feedback .feedback-note {
+    font-size: 1rem;
+    font-weight: normal;
+    color: var(--muted-color);
+    margin-top: 0.5rem;
+    line-height: 1.4;
 }
