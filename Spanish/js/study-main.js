@@ -307,7 +307,6 @@ function renderUI() {
         if (dom.wordCardContainer) dom.wordCardContainer.style.display = 'none';
         renderSentenceCard();
     } else {
-        if (studyProgressContainer) studyProgressContainer.style.display = 'none';
         if (dom.sentenceCardContainer) dom.sentenceCardContainer.style.display = 'none';
         renderWordList();
     }
@@ -785,7 +784,6 @@ function initializeWordListContainer() {
 }
 
 function setupEventListeners() {
-    if (dom.filterMenuBtn) dom.filterMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); dom.filterPanel.classList.toggle('is-visible'); });
     document.addEventListener('click', (e) => { if (dom.filterPanel && dom.filterPanel.classList.contains('is-visible') && !dom.filterMenuBtn.contains(e.target) && !dom.filterPanel.contains(e.target)) { dom.filterPanel.classList.remove('is-visible'); } });
 
     if (dom.studyModeSwitcher) dom.studyModeSwitcher.addEventListener('click', (e) => {
@@ -859,6 +857,62 @@ function setupEventListeners() {
     if (dom.sentenceListCloseBtn) dom.sentenceListCloseBtn.addEventListener('click', () => dom.sentenceListModal.style.display = 'none');
 }
 
+// 【新增】初始化设置面板的函数，包含所有新版UI的逻辑
+function initializeSettingsPanel() {
+    const triggerBtn = dom.filterMenuBtn;
+    const panel = dom.filterPanel;
+    if (!triggerBtn || !panel) return;
+
+    let isFirstOpen = true;
+
+    // A. Pill Switch 控件的核心逻辑
+    function initializePillSwitch(containerId) {
+        const container = panel.querySelector(containerId);
+        if (!container) return;
+        const slider = container.querySelector('.pill-slider');
+        const buttons = container.querySelectorAll('button');
+        
+        function moveSlider(targetButton) {
+            if (!targetButton || !slider) return;
+            slider.style.width = `${targetButton.offsetWidth}px`;
+            slider.style.left = `${targetButton.offsetLeft}px`;
+            buttons.forEach(btn => btn.classList.remove('active'));
+            targetButton.classList.add('active');
+        }
+
+        buttons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.stopPropagation(); // 阻止事件冒泡到父元素导致面板关闭
+                moveSlider(button);
+            });
+        });
+        
+        // 返回一个函数，用于在需要时手动定位滑块
+        return {
+            initSlider: () => {
+                const activeButton = container.querySelector('button.active');
+                moveSlider(activeButton);
+            }
+        };
+    }
+
+    const statusSwitch = initializePillSwitch('#status-filter-group');
+    const sortSwitch = initializePillSwitch('#sort-order-group');
+
+    // B. 下拉框显示/隐藏逻辑
+    triggerBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const isVisible = panel.classList.toggle('is-visible');
+
+        // 只在第一次打开时，执行滑块的初始定位
+        if (isVisible && isFirstOpen) {
+            if (statusSwitch) statusSwitch.initSlider();
+            if (sortSwitch) sortSwitch.initSlider();
+            isFirstOpen = false;
+        }
+    });
+}
+
 // 【新增】初始化学习卡片的滑动切换功能
 function initializeSwipeGestures() {
     const card = dom.sentenceCard;
@@ -907,6 +961,7 @@ async function initializePage() {
     initializeWordListContainer();
     initializeStudySession();
     setupAutoplay();
+    initializeSettingsPanel(); 
 
     const success = await fetchInitialData();
     if (success) {

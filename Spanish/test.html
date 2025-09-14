@@ -3,200 +3,274 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SVG 图标测试页面</title>
+    <title>最终版 "Pill Switch" 控件测试 (已修正)</title>
     <style>
+        /* 页面基础样式 */
+        :root {
+            --primary-color: #007bff;
+            --card-background: #ffffff;
+            --border-color: #dee2e6;
+            --muted-color: #6c757d;
+            --light-bg: #e9ecef;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #f4f7f6;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 40px;
+            color: #333;
             display: flex;
             justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            color: #333;
         }
-
         .container {
-            max-width: 600px;
-            width: 90%;
-            background-color: #fff;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 900px;
             text-align: center;
         }
-        
         h1 {
             color: #2c3e50;
-            margin-bottom: 30px;
         }
-
-        .icons-display {
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            gap: 30px;
+        p {
+            color: #6c757d;
+            margin-bottom: 40px;
         }
-        
-        .icon-item {
+        .dropdown-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .trigger-btn {
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: white;
+            transition: all 0.2s;
+        }
+        .trigger-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .dropdown-panel {
+            display: none;
+            position: absolute;
+            top: calc(100% + 12px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            background-color: var(--card-background);
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            border: 1px solid #e9ecef;
+            padding: 1rem;
+            z-index: 100;
+            text-align: left;
+            box-sizing: border-box;
+            animation: fadeInDown 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        }
+        .dropdown-panel.visible {
+            display: block;
+        }
+        .dropdown-panel::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 8px solid transparent;
+            border-bottom-color: var(--card-background);
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translate(-50%, -10px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        .control-group-wrapper {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 10px;
+            gap: 1rem;
         }
-
-        .icon-btn {
-            width: 70px;
-            height: 70px;
-            background-color: #ecf0f1;
+        hr.divider {
             border: none;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            border-top: 1px solid #f0f0f0;
+            margin: 0.75rem 0;
+        }
+        .control-label {
+            font-weight: 500;
+            color: #495057;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+            margin-right: 1rem;
+        }
+        .toggle-group {
+             width: 100%;
+             display: flex;
+             align-items: center;
+             justify-content: space-between;
+        }
+        .toggle-switch { display: none; }
+        .toggle-switch + label {
+            display: inline-block;
+            width: 48px;
+            height: 28px;
+            background-color: #ccc;
+            border-radius: 14px;
+            position: relative;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.3s;
         }
-        
-        .icon-btn:hover {
-            background-color: #bdc3c7;
+        .toggle-switch + label::after {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: white;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
-
-        /* SVG 通用样式 */
-        .icon-btn svg {
-            stroke: #333; /* 默认描边颜色 */
-            stroke-width: 2;
-            fill: none; /* 默认不填充 */
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            overflow: visible; /* 允许部分内容超出viewBox */
+        .toggle-switch:checked + label { background-color: var(--primary-color); }
+        .toggle-switch:checked + label::after { transform: translateX(20px); }
+        .control-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-
-        /* 朗读和逐词朗读图标保持默认大小 */
-        #read-icon svg,
-        #word-read-icon svg {
-            width: 35px; /* 调整为适中大小 */
-            height: 35px; /* 调整为适中大小 */
+        .pill-switch {
+            display: flex;
+            position: relative;
+            background-color: var(--light-bg);
+            border-radius: 8px;
+            padding: 4px;
+            box-sizing: border-box;
         }
-        
-        /* 慢速朗读和AI解释图标稍微大一点 */
-        #slow-read-icon svg,
-        #ai-explain-icon svg {
-            width: 60px; /* 再次放大图标 */
-            height: 60px; /* 再次放大图标 */
+        .pill-switch button {
+            background: none;
+            border: none;
+            padding: 0.4rem 0.5rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--muted-color);
+            position: relative;
+            z-index: 2;
+            transition: color 0.3s ease;
+            white-space: nowrap;
         }
-
-        /* 朗读图标的特殊样式 (填充颜色) */
-        #read-icon svg path {
-            fill: #333;
-            stroke: none;
+        .pill-switch button.active {
+            color: var(--primary-color);
         }
-
-        /* 乌龟图标的特殊样式调整 */
-        #slow-read-icon svg {
-            viewBox: 0 0 128 128;
-        }
-        #slow-read-icon svg rect,
-        #slow-read-icon svg ellipse,
-        #slow-read-icon svg line,
-        #slow-read-icon svg circle {
-            fill: none;
-            stroke: #333;
-            stroke-width: 4;
-        }
-        #slow-read-icon svg circle[r="2"] {
-             fill: #333;
-             stroke: none;
-             r: 2;
-        }
-        #slow-read-icon svg circle[r="1"] {
-             fill: #fff;
-             stroke: none;
-             r: 1;
-        }
-        #slow-read-icon svg > rect {
-            display: none; 
-        }
-
-        /* AI 解释图标的样式调整 */
-        #ai-explain-icon svg {
-            viewBox: 0 0 128 128;
-        }
-        #ai-explain-icon svg rect {
-            display: none;
-        }
-        #ai-explain-icon svg path {
-            fill: none;
-            stroke: #333;
-        }
-        #ai-explain-icon svg text {
-            fill: #333;
-            font-weight: 700;
-            font-size: 40px;
+        .pill-switch .pill-slider {
+            position: absolute;
+            top: 4px;
+            left: 0;
+            height: calc(100% - 8px);
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            z-index: 1;
+            /* 初始宽度为0，避免在不可见时闪烁 */
+            width: 0; 
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>新版 SVG 图标预览</h1>
-        <div class="icons-display">
-            <div class="icon-item">
-                <button id="read-icon" class="icon-btn" title="朗读">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M5 3l14 9-14 9z"></path>
-                    </svg>
-                </button>
-                <span class="icon-label">朗读</span>
-            </div>
-            
-            <div class="icon-item">
-                <button id="slow-read-icon" class="icon-btn" title="慢速朗读">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
-                        <title id="title">Turtle Icon</title>
-                        <desc id="desc">A turtle icon for slow playback.</desc>
-                        <ellipse cx="64" cy="64" rx="32" ry="24" fill="none" stroke="#333" stroke-width="3"/>
-                        <ellipse cx="64" cy="64" rx="24" ry="18" fill="none" stroke="#333" stroke-width="2"/>
-                        <line x1="64" y1="46" x2="64" y2="82" stroke="#333" stroke-width="2"/>
-                        <line x1="46" y1="64" x2="82" y2="64" stroke="#333" stroke-width="2"/>
-                        <circle cx="100" cy="64" r="8" fill="none" stroke="#333" stroke-width="2"/>
-                        <circle cx="103" cy="62" r="2" fill="#333" stroke="none"/>
-                        <circle cx="103" cy="62" r="1" fill="#fff" stroke="none"/>
-                        <circle cx="40" cy="48" r="6" fill="none" stroke="#333" stroke-width="2"/>
-                        <circle cx="40" cy="80" r="6" fill="none" stroke="#333" stroke-width="2"/>
-                        <circle cx="88" cy="48" r="6" fill="none" stroke="#333" stroke-width="2"/>
-                        <circle cx="88" cy="80" r="6" fill="none" stroke="#333" stroke-width="2"/>
-                        <circle cx="28" cy="64" r="4" fill="none" stroke="#333" stroke-width="2"/>
-                    </svg>
-                </button>
-                <span class="icon-label">慢速朗读</span>
-            </div>
-            
-            <div class="icon-item">
-                <button id="word-read-icon" class="icon-btn" title="逐词朗读">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                        <line x1="12" y1="19" x2="12" y2="23"></line>
-                        <line x1="8" y1="23" x2="16" y2="23"></line>
-                    </svg>
-                </button>
-                <span class="icon-label">逐词朗读</span>
-            </div>
-            
-            <div class="icon-item">
-                <button id="ai-explain-icon" class="icon-btn" title="AI 解释">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
-                        <title id="title">AI Heart Icon</title>
-                        <desc id="desc">An outline heart with lowercase "ai" inside.</desc>
-                        <g transform="translate(0, 10)"> 
-                            <path d="M64 36 C56 20, 32 22, 32 44 C32 64, 64 86, 64 86 C64 86, 96 64, 96 44 C96 22, 72 20, 64 36 Z" fill="none" stroke="#333" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" />
-                            <text x="64" y="70" text-anchor="middle" font-family="Inter, Roboto, Arial, sans-serif" font-weight="700" font-size="40" fill="#333">ai</text>
-                        </g>
-                    </svg>
-                </button>
-                <span class="icon-label">AI 解释</span>
+        <h1>最终版 "Pill Switch" 控件测试 (已修正)</h1>
+        <p>点击按钮，体验最终版的弹出框设计。</p>
+        <div class="dropdown-wrapper">
+            <button class="trigger-btn" data-target="final-version">最终方案</button>
+            <div id="final-version" class="dropdown-panel">
+                 <div class="control-group-wrapper">
+                    <div class="toggle-group">
+                        <label class="control-label">自动朗读</label>
+                        <div>
+                            <input type="checkbox" id="autoplay-toggle" class="toggle-switch">
+                            <label for="autoplay-toggle"></label>
+                        </div>
+                    </div>
+                    <hr class="divider">
+                    <div class="control-group">
+                        <label class="control-label">状态</label>
+                        <div class="pill-switch" id="status-switch">
+                            <div class="pill-slider"></div>
+                            <button class="active" data-value="unmastered">未掌握</button>
+                            <button data-value="mastered">已掌握</button>
+                            <button data-value="all">所有</button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">排序</label>
+                        <div class="pill-switch" id="sort-switch">
+                            <div class="pill-slider"></div>
+                            <button class="active" data-value="sequential">顺序</button>
+                            <button data-value="random">随机</button>
+                        </div>
+                    </div>
+                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const trigger = document.querySelector('.trigger-btn');
+            const dropdown = document.querySelector('.dropdown-panel');
+            let isFirstOpen = true; // 用于标记是否是第一次打开
+
+            // --- Pill Switch 控件的核心逻辑 ---
+            function initializePillSwitch(containerId) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                const slider = container.querySelector('.pill-slider');
+                const buttons = container.querySelectorAll('button');
+                
+                function moveSlider(targetButton) {
+                    if (!targetButton || !slider) return;
+                    slider.style.width = `${targetButton.offsetWidth}px`;
+                    slider.style.left = `${targetButton.offsetLeft}px`;
+
+                    buttons.forEach(btn => btn.classList.remove('active'));
+                    targetButton.classList.add('active');
+                }
+
+                buttons.forEach(button => {
+                    button.addEventListener('click', () => moveSlider(button));
+                });
+                
+                // 返回一个函数，用于在需要时手动定位滑块
+                return {
+                    initSlider: () => {
+                        const activeButton = container.querySelector('button.active');
+                        moveSlider(activeButton);
+                    }
+                };
+            }
+
+            const statusSwitch = initializePillSwitch('status-switch');
+            const sortSwitch = initializePillSwitch('sort-switch');
+
+            // --- 下拉框显示/隐藏逻辑 ---
+            trigger.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const isVisible = dropdown.classList.toggle('visible');
+
+                // 【修改】只在第一次打开时，执行初始定位
+                if (isVisible && isFirstOpen) {
+                    statusSwitch.initSlider();
+                    sortSwitch.initSlider();
+                    isFirstOpen = false; // 后续打开不再重复执行
+                }
+            });
+
+            document.addEventListener('click', (event) => {
+                if (!dropdown.contains(event.target) && !trigger.contains(event.target)) {
+                    dropdown.classList.remove('visible');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

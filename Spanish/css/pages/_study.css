@@ -34,25 +34,19 @@
     z-index: 20;
 }
 
-.actions-panel {
-    display: none;
-    position: absolute;
-    top: calc(100% + 5px);
-    right: 0;
-    background-color: var(--card-background);
-    border-radius: var(--border-radius);
-    box-shadow: 0 4px 12px var(--shadow-color);
-    border: 1px solid var(--border-color);
-    padding: 1rem;
-    width: 300px;
-    z-index: 100;
-    flex-direction: column;
-    gap: 1rem;
+/* ========================================= */
+/* 【修改】设置图标按钮的尺寸和颜色 */
+/* ========================================= */
+#filter-menu-btn {
+    width: 36px; /* 减小尺寸 */
+    height: 36px;
+    color: #adb5bd; /* 使用更浅的灰色 */
+}
+#filter-menu-btn:hover {
+    color: var(--primary-color);
+    background-color: #f0f0f0;
 }
 
-.actions-panel.is-visible {
-    display: flex;
-}
 
 .control-group-wrapper {
     display: flex;
@@ -72,6 +66,8 @@
     color: var(--muted-color);
     font-size: 0.9rem;
     white-space: nowrap;
+    flex-shrink: 0;
+    margin-right: 1rem;
 }
 
 .segmented-control {
@@ -240,18 +236,19 @@
 
 .study-card > .card-actions {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     width: 100%;
     margin-top: auto;
     margin-top: 2rem;
-    position: relative;
 }
 
 .card-actions .playback-group {
     display: flex;
     justify-content: center;
     gap: 1.5rem;
+    flex-grow: 1;
+    padding-left: 50px; 
 }
 
 .card-actions .action-item {
@@ -265,6 +262,24 @@
     font-size: 0.75rem;
     color: var(--muted-color);
     white-space: nowrap;
+}
+
+.card-actions .action-item-right {
+    min-width: 50px;
+    flex-shrink: 0;
+}
+
+#index-ai-explain-btn {
+    background: none;
+    border: none;
+    color: var(--muted-color);
+    transition: background-color 0.2s, color 0.2s;
+}
+
+#index-ai-explain-btn:hover {
+    background-color: #f0f0f0;
+    color: var(--primary-color);
+    transform: none;
 }
 
 .study-card-with-nav > .card-footer {
@@ -367,20 +382,13 @@
     color: var(--danger-color);
 }
 
-.card-actions .action-item-right {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
 .autoplay-container {
     position: absolute;
     left: 1rem;
     top: 50%;
     transform: translateY(-50%);
     z-index: 20;
-    display: none; /* JS会根据模式决定是否显示 */
+    display: none;
 }
 
 #autoplay-toggle-btn.active {
@@ -388,7 +396,6 @@
     background-color: var(--light-blue-bg);
 }
 
-/* 单词列表视图 (Word List View) 相关样式 */
 #word-card-container {
     background-color: var(--card-background);
     border-radius: var(--border-radius);
@@ -499,7 +506,6 @@
     color: var(--primary-color);
 }
 
-/* 学习会话 (Study Session) 相关样式 */
 .session-progress {
     background-color: var(--primary-color);
     color: white;
@@ -541,7 +547,7 @@
         font-size: 1rem;
     }
 }
-/* 【新增】学习页面底部导航栏样式 (从 quiz.css 借鉴) */
+
 #study-footer-nav {
     width: 100%;
     max-width: 600px;
@@ -560,7 +566,7 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     scroll-snap-type: x mandatory;
-    scroll-padding-inline: calc(50% - 16px); /* 让圆点能居中 */
+    scroll-padding-inline: calc(50% - 16px);
 }
 
 #study-progress-bar::-webkit-scrollbar {
@@ -591,7 +597,6 @@
     scroll-snap-align: center;
 }
 
-/* 【新增】已掌握句子的圆点样式 */
 #study-progress-bar .progress-dot.mastered {
     background-color: var(--success-color);
     color: white;
@@ -601,4 +606,118 @@
     border-color: var(--primary-color);
     transform: scale(1.2);
     color: var(--primary-color);
+}
+
+.actions-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 300px;
+    background-color: var(--card-background);
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    border: 1px solid #e9ecef;
+    padding: 1rem;
+    z-index: 100;
+    text-align: left;
+    box-sizing: border-box;
+}
+.actions-panel.is-visible {
+    display: block;
+    animation: fadeInDown 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+.actions-panel::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    right: 10px;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-bottom-color: var(--card-background);
+}
+
+.actions-panel hr.divider {
+    border: none;
+    border-top: 1px solid #f0f0f0;
+    margin: 0.75rem 0;
+}
+
+.actions-panel .control-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* ========================================= */
+/* 【新增】最终版设置面板样式 */
+/* ========================================= */
+.toggle-group {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.toggle-switch { display: none; }
+.toggle-switch + label {
+    display: inline-block;
+    width: 48px;
+    height: 28px;
+    background-color: #ccc;
+    border-radius: 14px;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.toggle-switch + label::after {
+    content: '';
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: white;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle-switch:checked + label { background-color: var(--primary-color); }
+.toggle-switch:checked + label::after { transform: translateX(20px); }
+
+.pill-switch {
+    display: flex;
+    position: relative;
+    background-color: #e9ecef;
+    border-radius: 8px;
+    padding: 4px;
+    box-sizing: border-box;
+}
+.pill-switch button {
+    background: none;
+    border: none;
+    padding: 0.4rem 0.5rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--muted-color);
+    position: relative;
+    z-index: 2;
+    transition: color 0.3s ease;
+    white-space: nowrap;
+}
+.pill-switch button.active {
+    color: var(--primary-color);
+}
+.pill-switch .pill-slider {
+    position: absolute;
+    top: 4px;
+    left: 0;
+    height: calc(100% - 8px);
+    background-color: white;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    z-index: 1;
+    width: 0;
 }
